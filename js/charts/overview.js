@@ -1,5 +1,6 @@
 (function () {
   const SVG_NS = "http://www.w3.org/2000/svg";
+  let riskPanelResizeBound = false;
 
   function createSvgElement(tag, attrs) {
     const node = document.createElementNS(SVG_NS, tag);
@@ -175,8 +176,8 @@
     if (!chartTarget || !summaryTarget || !factorsTarget) return;
 
     const score = layer.healthScore.score;
-    const size = 250;
-    const radius = 84;
+    const size = 214;
+    const radius = 72;
     const circumference = 2 * Math.PI * radius;
     const dashOffset = circumference * (1 - score / 100);
 
@@ -188,7 +189,7 @@
             <stop offset="100%" stop-color="#bf7b22"></stop>
           </linearGradient>
         </defs>
-        <circle cx="${size / 2}" cy="${size / 2}" r="${radius}" fill="none" stroke="rgba(23,48,49,0.08)" stroke-width="18"></circle>
+        <circle cx="${size / 2}" cy="${size / 2}" r="${radius}" fill="none" stroke="rgba(23,48,49,0.08)" stroke-width="16"></circle>
         <circle
           cx="${size / 2}"
           cy="${size / 2}"
@@ -196,14 +197,14 @@
           fill="none"
           stroke="url(#scoreGradient)"
           stroke-linecap="round"
-          stroke-width="18"
+          stroke-width="16"
           stroke-dasharray="${circumference}"
           stroke-dashoffset="${dashOffset}"
           transform="rotate(-90 ${size / 2} ${size / 2})"
         ></circle>
-        <text x="50%" y="46%" text-anchor="middle" font-size="54" font-weight="800" fill="#173031">${score}</text>
-        <text x="50%" y="58%" text-anchor="middle" font-size="18" fill="#5f7477">${layer.healthScore.grade}</text>
-        <text x="50%" y="71%" text-anchor="middle" font-size="12" fill="#5f7477">0-100 综合评分</text>
+        <text x="50%" y="46%" text-anchor="middle" font-size="46" font-weight="800" fill="#173031">${score}</text>
+        <text x="50%" y="59%" text-anchor="middle" font-size="16" fill="#5f7477">${layer.healthScore.grade}</text>
+        <text x="50%" y="73%" text-anchor="middle" font-size="11" fill="#5f7477">0-100 综合评分</text>
       </svg>
     `;
 
@@ -261,6 +262,30 @@
           .join("")}
       </div>
     `;
+  }
+
+  function syncRiskPanelHeight() {
+    const healthPanel = document.querySelector(".panel-spotlight");
+    const riskPanel = document.querySelector(".js-risk-panel");
+    const riskCards = riskPanel?.querySelector(".risk-rating-cards");
+    if (!healthPanel || !riskPanel || !riskCards) return;
+
+    riskPanel.style.height = "";
+    if (window.matchMedia("(max-width: 1320px)").matches) return;
+
+    const targetHeight = Math.round(healthPanel.getBoundingClientRect().height);
+    if (targetHeight > 0) {
+      riskPanel.style.height = `${targetHeight}px`;
+    }
+  }
+
+  function bindRiskPanelResizeSync() {
+    if (riskPanelResizeBound) return;
+
+    window.addEventListener("resize", () => {
+      syncRiskPanelHeight();
+    });
+    riskPanelResizeBound = true;
   }
 
   function renderLineChart(selector, chartData, label) {
@@ -452,5 +477,8 @@
     renderRiskRatings(layer);
     renderTrendSection(layer);
     renderStagnantAnalysis(layer);
+    syncRiskPanelHeight();
+    requestAnimationFrame(syncRiskPanelHeight);
+    bindRiskPanelResizeSync();
   };
 })();

@@ -26,10 +26,10 @@ window.inventoryBIPrototype = {
           hint: "库存快照口径，不随时间区间变化",
           showDeltas: false,
           metrics: [
-            { title: "总库存量", value: "128,460", unit: "双", caption: "男鞋 + 女鞋 + 童鞋 + 在途" },
-            { title: "总库存金额", value: "¥12,860,000", unit: "", caption: "库存资金占用" },
-            { title: "在途库存量", value: "18,240", unit: "双", caption: "海运 / 空运 / 清关中" },
-            { title: "FBA 在库数量", value: "54,900", unit: "双", caption: "平台仓鞋类在库快照" },
+            { title: "总库存量", value: "128,460", unit: "双", caption: "本地仓+在途+平台仓" },
+            { title: "总库存金额", value: "¥12,860,000", unit: "", caption: "总库存量成本金额" },
+            { title: "在途库存量", value: "18,240", unit: "双", caption: "物流在途" },
+            { title: "FBA 在库数量", value: "54,900", unit: "双", caption: "平台仓在库快照" },
           ],
         },
         turnoverEfficiency: {
@@ -282,55 +282,206 @@ window.inventoryBIPrototype = {
       },
     },
     layer2: {
-      badge: "第二层 · 面向采购 / 运营 / 计划",
       title: "多维结构分析看板",
-      summary: "聚焦库存结构是否合理，帮助识别畅销品缺货与滞销品积压的具体位置，为结构优化提供依据。",
-      tags: ["结构占比", "排名对比", "库龄分布"],
       filters: [
-        { label: "时间范围", value: "近 90 天" },
-        { label: "国家 / 站点", value: "全站点 / 可切换" },
-        { label: "仓库", value: "全部仓库" },
+        { label: "货号", value: "全部货号" },
         { label: "品类", value: "全部品类" },
-        { label: "系列", value: "全部系列" },
+        { label: "站点", value: "全部站点" },
+        { label: "店铺", value: "全部店铺" },
+        { label: "运营负责人", value: "全部负责人" },
+        { label: "时间区间", value: "2026年3月-2026年3月" },
       ],
-      modules: [
-        {
-          title: "ABC 分类库存分布",
-          description: "用于展示高价值高动销、中价值中频次、低价值低动销库存的金额占比、SKU 占比和占用库位。",
-          chart: "建议图表：堆积条形图 / 矩形树图",
-          note: "重点看 A/B/C 三类结构是否失衡。",
+      abcDistribution: {
+        note: "A/B/C 按动销贡献率分层，默认排除淘汰品与新品。",
+        dimensionOptions: ["品类", "SKU", "仓库", "国家"],
+        metricOptions: ["库存金额", "SKU数量", "库位占用"],
+        defaultDimension: "品类",
+        defaultMetric: "库存金额",
+        dataByDimension: {
+          品类: {
+            库存金额: [
+              { tier: "A类", value: 66, color: "#0f7068" },
+              { tier: "B类", value: 23, color: "#bf7b22" },
+              { tier: "C类", value: 11, color: "#cb5a48" },
+            ],
+            SKU数量: [
+              { tier: "A类", value: 49, color: "#0f7068" },
+              { tier: "B类", value: 31, color: "#bf7b22" },
+              { tier: "C类", value: 20, color: "#cb5a48" },
+            ],
+            库位占用: [
+              { tier: "A类", value: 55, color: "#0f7068" },
+              { tier: "B类", value: 28, color: "#bf7b22" },
+              { tier: "C类", value: 17, color: "#cb5a48" },
+            ],
+          },
+          SKU: {
+            库存金额: [
+              { tier: "A类", value: 71, color: "#0f7068" },
+              { tier: "B类", value: 19, color: "#bf7b22" },
+              { tier: "C类", value: 10, color: "#cb5a48" },
+            ],
+            SKU数量: [
+              { tier: "A类", value: 52, color: "#0f7068" },
+              { tier: "B类", value: 30, color: "#bf7b22" },
+              { tier: "C类", value: 18, color: "#cb5a48" },
+            ],
+            库位占用: [
+              { tier: "A类", value: 58, color: "#0f7068" },
+              { tier: "B类", value: 27, color: "#bf7b22" },
+              { tier: "C类", value: 15, color: "#cb5a48" },
+            ],
+          },
+          仓库: {
+            库存金额: [
+              { tier: "A类", value: 62, color: "#0f7068" },
+              { tier: "B类", value: 26, color: "#bf7b22" },
+              { tier: "C类", value: 12, color: "#cb5a48" },
+            ],
+            SKU数量: [
+              { tier: "A类", value: 47, color: "#0f7068" },
+              { tier: "B类", value: 33, color: "#bf7b22" },
+              { tier: "C类", value: 20, color: "#cb5a48" },
+            ],
+            库位占用: [
+              { tier: "A类", value: 53, color: "#0f7068" },
+              { tier: "B类", value: 29, color: "#bf7b22" },
+              { tier: "C类", value: 18, color: "#cb5a48" },
+            ],
+          },
+          国家: {
+            库存金额: [
+              { tier: "A类", value: 58, color: "#0f7068" },
+              { tier: "B类", value: 29, color: "#bf7b22" },
+              { tier: "C类", value: 13, color: "#cb5a48" },
+            ],
+            SKU数量: [
+              { tier: "A类", value: 45, color: "#0f7068" },
+              { tier: "B类", value: 35, color: "#bf7b22" },
+              { tier: "C类", value: 20, color: "#cb5a48" },
+            ],
+            库位占用: [
+              { tier: "A类", value: 50, color: "#0f7068" },
+              { tier: "B类", value: 32, color: "#bf7b22" },
+              { tier: "C类", value: 18, color: "#cb5a48" },
+            ],
+          },
         },
-        {
-          title: "SKU 周转速度排名",
-          description: "同时保留高周转 Top 10 和低周转 Bottom 10 的位置，便于采购和运营在同一屏幕里看快慢两端。",
-          chart: "建议图表：横向排名条形图",
-          note: "重点看 MSKU、周转天数、日均销量与库存金额。",
+      },
+      turnoverRanking: {
+        top10: [
+          { parent: "RUN-轻量跑鞋父体", turnoverDays: 24, dailySales: 182, stockQty: 4380, stockAmount: 892000 },
+          { parent: "KID-儿童训练鞋父体", turnoverDays: 27, dailySales: 165, stockQty: 3960, stockAmount: 764000 },
+          { parent: "SNE-透气板鞋父体", turnoverDays: 29, dailySales: 154, stockQty: 4120, stockAmount: 838000 },
+          { parent: "BSK-实战篮球鞋父体", turnoverDays: 31, dailySales: 146, stockQty: 4290, stockAmount: 915000 },
+          { parent: "TRK-越野徒步鞋父体", turnoverDays: 33, dailySales: 131, stockQty: 3650, stockAmount: 802000 },
+          { parent: "CNS-经典帆布鞋父体", turnoverDays: 35, dailySales: 126, stockQty: 3410, stockAmount: 618000 },
+          { parent: "CLS-通勤皮鞋父体", turnoverDays: 36, dailySales: 119, stockQty: 3340, stockAmount: 703000 },
+          { parent: "SLP-舒适拖鞋父体", turnoverDays: 38, dailySales: 114, stockQty: 3270, stockAmount: 482000 },
+          { parent: "SND-夏季凉鞋父体", turnoverDays: 39, dailySales: 108, stockQty: 3190, stockAmount: 566000 },
+          { parent: "SNK-基础休闲鞋父体", turnoverDays: 41, dailySales: 102, stockQty: 3120, stockAmount: 598000 },
+        ],
+        bottom10: [
+          { parent: "HL-宴会高跟鞋父体", turnoverDays: 122, dailySales: 19, stockQty: 2340, stockAmount: 712000 },
+          { parent: "BT-冬季马丁靴父体", turnoverDays: 117, dailySales: 22, stockQty: 2470, stockAmount: 846000 },
+          { parent: "LF-乐福鞋旧款父体", turnoverDays: 113, dailySales: 24, stockQty: 2190, stockAmount: 652000 },
+          { parent: "RNR-复古跑鞋父体", turnoverDays: 109, dailySales: 28, stockQty: 2630, stockAmount: 738000 },
+          { parent: "DS-设计师联名父体", turnoverDays: 105, dailySales: 31, stockQty: 2010, stockAmount: 934000 },
+          { parent: "WTR-雨靴父体", turnoverDays: 101, dailySales: 33, stockQty: 2260, stockAmount: 508000 },
+          { parent: "HR-高帮板鞋父体", turnoverDays: 97, dailySales: 36, stockQty: 2390, stockAmount: 626000 },
+          { parent: "CLB-商务短靴父体", turnoverDays: 94, dailySales: 38, stockQty: 2270, stockAmount: 688000 },
+          { parent: "SLM-瘦长楦型父体", turnoverDays: 92, dailySales: 40, stockQty: 2160, stockAmount: 574000 },
+          { parent: "PRM-溢价系列父体", turnoverDays: 89, dailySales: 43, stockQty: 2050, stockAmount: 782000 },
+        ],
+      },
+      structureCompare: {
+        scopeOptions: ["总体", "平台仓", "本地仓"],
+        defaultScope: "总体",
+        labels: ["跑步鞋", "休闲鞋", "篮球鞋", "高跟鞋", "童鞋", "靴类"],
+        sales: [860, 740, 620, 510, 690, 430],
+        inventoryByScope: {
+          总体: [1320, 1180, 980, 860, 1020, 790],
+          平台仓: [840, 760, 620, 510, 680, 430],
+          本地仓: [480, 420, 360, 350, 340, 360],
         },
-        {
-          title: "库存结构对比图",
-          description: "对比库存占比与销售占比，直接发现某些品类库存压得多但卖得少的结构性问题。",
-          chart: "建议图表：分组柱状图 / 哑铃图",
-          note: "重点看库存占比与销售占比之间的差距。",
+      },
+      agingStructure: {
+        warehouseOptions: ["FBA仓", "CN仓"],
+        defaultWarehouse: "FBA仓",
+        dataByWarehouse: {
+          FBA仓: {
+            share: [
+              { label: "0-30天", value: 41, color: "#0f7068" },
+              { label: "31-60天", value: 24, color: "#2d8b65" },
+              { label: "61-90天", value: 14, color: "#4d7397" },
+              { label: "91-180天", value: 11, color: "#bf7b22" },
+              { label: "181-365天", value: 6, color: "#cb5a48" },
+              { label: "365天以上", value: 4, color: "#9a3324" },
+            ],
+            trend: {
+              labels: ["1月", "2月", "3月"],
+              series: [
+                { name: "0-60天", color: "#0f7068", fill: "#0f7068", area: true, data: [65, 64, 62] },
+                { name: "61-180天", color: "#bf7b22", fill: "#bf7b22", area: true, data: [24, 25, 26] },
+                { name: "181天以上", color: "#cb5a48", fill: "#cb5a48", area: true, data: [11, 11, 12] },
+              ],
+            },
+          },
+          CN仓: {
+            share: [
+              { label: "0-30天", value: 28, color: "#0f7068" },
+              { label: "31-60天", value: 21, color: "#2d8b65" },
+              { label: "61-90天", value: 18, color: "#4d7397" },
+              { label: "91-180天", value: 17, color: "#bf7b22" },
+              { label: "181-365天", value: 10, color: "#cb5a48" },
+              { label: "365天以上", value: 6, color: "#9a3324" },
+            ],
+            trend: {
+              labels: ["1月", "2月", "3月"],
+              series: [
+                { name: "0-60天", color: "#0f7068", fill: "#0f7068", area: true, data: [52, 50, 49] },
+                { name: "61-180天", color: "#bf7b22", fill: "#bf7b22", area: true, data: [33, 34, 34] },
+                { name: "181天以上", color: "#cb5a48", fill: "#cb5a48", area: true, data: [15, 16, 17] },
+              ],
+            },
+          },
         },
-        {
-          title: "库龄结构图",
-          description: "先保留静态库龄结构与库龄变化趋势两个区块，后续可按 FBA 仓和 CN 仓拆开。",
-          chart: "建议图表：堆积柱状图 + 堆积面积图",
-          note: "重点看 0-30、31-60、61-90、90+ 等区间迁移。",
-        },
-        {
-          title: "超期仓储费预警",
-          description: "这里先预留费用预估和风险 SKU 清单的组合布局，用于后续补充长期仓储费与超龄附加费试算。",
-          chart: "建议图表：预警表 + 横向条形图",
-          note: "重点看 181-365 天与 365 天以上库存。",
-        },
-        {
-          title: "不可售库存池",
-          description: "按退货、损坏、过期等原因拆分不可售库存，同时保留处理截止日期与责任动作的显示位置。",
-          chart: "建议图表：结构图 + 状态列表",
-          note: "重点看原因占比与自动移除期限。",
-        },
-      ],
+      },
+      storageFeeWarning: {
+        month: "2026年4月",
+        ltsfSkuCount: 132,
+        estimatedLtsf: 286000,
+        estimatedAgedFee: 194000,
+        estimatedTotal: 480000,
+        bands: [
+          { range: "181-365天", skuCount: 86, volume: "52.4 m³", rate: "¥3.6 / m³", fee: 188000 },
+          { range: "365天以上", skuCount: 46, volume: "31.1 m³", rate: "¥9.4 / m³", fee: 292000 },
+        ],
+        topRiskSkus: [
+          { sku: "RUN-41-BLK-US", warehouse: "FBA-USW", age: "392天", fee: 13200 },
+          { sku: "HL-38-RED-EU", warehouse: "FBA-EU", age: "417天", fee: 11800 },
+          { sku: "BT-42-BRN-US", warehouse: "FBA-USE", age: "381天", fee: 10600 },
+          { sku: "CLB-40-BLK-UK", warehouse: "FBA-UK", age: "365天", fee: 9600 },
+          { sku: "LF-39-WHT-JP", warehouse: "FBA-JP", age: "358天", fee: 8900 },
+        ],
+      },
+      unsellablePool: {
+        totalQty: 7040,
+        totalAmount: 1326000,
+        reasons: [
+          { reason: "买家退货", qty: 3240, amount: 418000, share: 46, color: "#0f7068" },
+          { reason: "FBA仓库损坏", qty: 2310, amount: 596000, share: 33, color: "#bf7b22" },
+          { reason: "过期", qty: 1490, amount: 312000, share: 21, color: "#cb5a48" },
+        ],
+        deadlines: [
+          { sku: "RUN-42-WHT-US", reason: "买家退货", action: "自动移除", deadline: "2026-04-08", daysLeft: 11 },
+          { sku: "SNE-40-GRY-EU", reason: "FBA仓库损坏", action: "弃置", deadline: "2026-04-12", daysLeft: 15 },
+          { sku: "KID-33-BLU-US", reason: "买家退货", action: "自动移除", deadline: "2026-04-15", daysLeft: 18 },
+          { sku: "HL-37-RED-UK", reason: "过期", action: "弃置", deadline: "2026-04-18", daysLeft: 21 },
+          { sku: "BT-41-BRN-JP", reason: "FBA仓库损坏", action: "自动移除", deadline: "2026-04-20", daysLeft: 23 },
+          { sku: "CNS-39-BLK-CA", reason: "过期", action: "弃置", deadline: "2026-04-24", daysLeft: 27 },
+        ],
+      },
     },
     layer3: {
       badge: "第三层 · 面向一线运营 / 采购 / 计划",

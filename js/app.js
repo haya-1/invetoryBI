@@ -251,6 +251,13 @@
       return;
     }
 
+    if (layerKey === "layer2") {
+      if (typeof window.renderLayer2Page === "function") {
+        window.renderLayer2Page(layer);
+      }
+      return;
+    }
+
     renderPlaceholderPage(layer);
   });
 })();
