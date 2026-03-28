@@ -38,89 +38,134 @@
     }));
   }
 
-  function renderSparkline(target, values, tone) {
-    const width = 120;
-    const height = 40;
-    const padding = 4;
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const span = max - min || 1;
-    const step = (width - padding * 2) / (values.length - 1 || 1);
-    const colorMap = {
-      positive: "#2d8b65",
-      warning: "#bf7b22",
-      negative: "#cb5a48",
-      neutral: "#4d7397",
-      focus: "#0f7068",
-    };
-    const stroke = colorMap[tone] || colorMap.focus;
-
-    const points = values.map((value, index) => ({
-      x: padding + index * step,
-      y: padding + ((max - value) / span) * (height - padding * 2),
-    }));
-
-    const svg = createSvgElement("svg", {
-      viewBox: `0 0 ${width} ${height}`,
-      class: "sparkline-svg",
-      "aria-hidden": "true",
-    });
-    const area = createSvgElement("path", {
-      d: buildAreaPath(points, height - padding),
-      class: "spark-area",
-      fill: stroke,
-    });
-    const line = createSvgElement("path", {
-      d: buildLinePath(points),
-      class: "spark-line",
-      stroke,
-    });
-    const dot = createSvgElement("circle", {
-      cx: points[points.length - 1].x,
-      cy: points[points.length - 1].y,
-      r: 4.2,
-      class: "spark-dot",
-      fill: stroke,
-    });
-
-    svg.append(area, line, dot);
-    target.innerHTML = "";
-    target.appendChild(svg);
+  function formatAmount(value) {
+    return `¥${(value / 10000).toFixed(1)}万`;
   }
 
-  function renderKpis(layer) {
-    const container = document.querySelector(".js-kpi-grid");
-    if (!container) return;
+  function formatQuantity(value) {
+    return `${value.toLocaleString("zh-CN")} 件`;
+  }
 
-    container.innerHTML = layer.metrics
+  function renderSegmentSwitch(target, options, activeValue, onChange) {
+    if (!target) return;
+
+    target.innerHTML = options
       .map(
-        (metric, index) => `
-          <article class="kpi-card">
-            <div class="kpi-head">
-              <div>
-                <p class="kpi-title">${metric.title}</p>
-                <div class="kpi-caption">${metric.caption}</div>
-              </div>
-              <span class="pill pill-muted">#0${index + 1}</span>
-            </div>
-            <div class="kpi-value">${metric.value}${metric.unit ? `<span class="kpi-unit">${metric.unit}</span>` : ""}</div>
-            <div class="kpi-foot">
-              <div class="kpi-deltas">
-                ${metric.deltas
-                  .map((delta) => `<span class="delta-chip tone-${delta.tone}">${delta.label} ${delta.value}</span>`)
-                  .join("")}
-              </div>
-              <div class="kpi-sparkline" data-sparkline-index="${index}"></div>
-            </div>
-          </article>
+        (option) => `
+          <button
+            class="seg-btn${option === activeValue ? " is-active" : ""}"
+            type="button"
+            data-seg-value="${option}"
+          >${option}</button>
         `
       )
       .join("");
 
-    container.querySelectorAll("[data-sparkline-index]").forEach((node) => {
-      const metric = layer.metrics[Number(node.getAttribute("data-sparkline-index"))];
-      renderSparkline(node, metric.sparkline, metric.status);
+    target.querySelectorAll("[data-seg-value]").forEach((node) => {
+      node.addEventListener("click", () => {
+        const value = node.getAttribute("data-seg-value");
+        if (!value || value === activeValue) return;
+        onChange(value);
+      });
     });
+  }
+
+  function renderMetricCard(metric, showDeltas) {
+    const deltas = showDeltas && Array.isArray(metric.deltas) && metric.deltas.length > 0
+      ? `
+        <div class="metric-deltas">
+          ${metric.deltas
+            .map((delta) => `<span class="delta-chip tone-${delta.tone}">${delta.label} ${delta.value}</span>`)
+            .join("")}
+        </div>
+      `
+      : "";
+
+    return `
+      <article class="metric-card">
+        <p class="metric-title">${metric.title}</p>
+        <p class="metric-value">${metric.value}${metric.unit ? `<span class="metric-unit">${metric.unit}</span>` : ""}</p>
+        <p class="metric-caption">${metric.caption}</p>
+        ${deltas}
+      </article>
+    `;
+  }
+
+  function renderStaticKpiGroup(group, kicker) {
+    return `
+      <article class="panel kpi-group-panel">
+        <div class="panel-heading panel-heading--compact">
+          <div>
+            <p class="panel-kicker">${kicker}</p>
+            <h3>${group.title}</h3>
+          </div>
+          <span class="group-hint">${group.hint}</span>
+        </div>
+        <div class="kpi-row">
+          ${group.metrics.map((metric) => renderMetricCard(metric, group.showDeltas)).join("")}
+        </div>
+      </article>
+    `;
+  }
+
+  function renderKpis(layer) {
+    const container = document.querySelector(".js-kpi-groups");
+    if (!container || !layer.kpiGroups) return;
+
+    const { inventoryScale, turnoverEfficiency, fundingRisk } = layer.kpiGroups;
+    let activeValueType = fundingRisk.defaultValueType;
+    let activeWarehouse = fundingRisk.defaultWarehouse;
+
+    container.innerHTML = `
+      ${renderStaticKpiGroup(inventoryScale, "核心指标")}
+      ${renderStaticKpiGroup(turnoverEfficiency, "核心指标")}
+      <article class="panel kpi-group-panel">
+        <div class="panel-heading panel-heading--compact">
+          <div>
+            <p class="panel-kicker">核心指标</p>
+            <h3>${fundingRisk.title}</h3>
+          </div>
+          <span class="group-hint">${fundingRisk.hint}</span>
+        </div>
+        <div class="kpi-group-switches">
+          <div class="panel-switch js-funding-value-switch" aria-label="资金风险口径切换"></div>
+          <div class="panel-switch js-funding-warehouse-switch" aria-label="资金风险仓别切换"></div>
+        </div>
+        <div class="kpi-row js-funding-risk-cards"></div>
+      </article>
+    `;
+
+    const valueSwitchNode = container.querySelector(".js-funding-value-switch");
+    const warehouseSwitchNode = container.querySelector(".js-funding-warehouse-switch");
+    const cardsNode = container.querySelector(".js-funding-risk-cards");
+
+    function paintFundingMetrics() {
+      if (!cardsNode) return;
+
+      const metrics = fundingRisk.metricsByView?.[activeValueType]?.[activeWarehouse] || [];
+      cardsNode.innerHTML = metrics.map((metric) => renderMetricCard(metric, false)).join("");
+    }
+
+    function bindFundingValueSwitch() {
+      renderSegmentSwitch(valueSwitchNode, fundingRisk.valueTypeOptions, activeValueType, (next) => {
+        activeValueType = next;
+        bindFundingValueSwitch();
+        paintFundingMetrics();
+      });
+    }
+
+    function bindFundingWarehouseSwitch() {
+      renderSegmentSwitch(warehouseSwitchNode, fundingRisk.warehouseOptions, activeWarehouse, (next) => {
+        activeWarehouse = next;
+        bindFundingWarehouseSwitch();
+        paintFundingMetrics();
+      });
+    }
+
+    bindFundingValueSwitch();
+    bindFundingWarehouseSwitch();
+
+    paintFundingMetrics();
   }
 
   function renderHealthScore(layer) {
@@ -178,52 +223,41 @@
       .join("");
   }
 
-  function renderRiskDistribution(layer) {
-    const target = document.querySelector(".js-risk-distribution");
-    if (!target) return;
-
-    const total = layer.riskDistribution.summary.reduce(
-      (sum, item) => sum + Number(item.amount.replace(/[^\d]/g, "")),
-      0
-    );
+  function renderRiskRatings(layer) {
+    const target = document.querySelector(".js-risk-rating-list");
+    if (!target || !layer.riskRatings) return;
 
     target.innerHTML = `
       <div class="risk-summary">
-        ${layer.riskDistribution.summary
+        ${layer.riskRatings.summary
           .map(
             (item) => `
               <div class="risk-card">
                 <strong>${item.count}</strong>
-                <span>${item.label} · ${item.amount}</span>
+                <span>${item.level}</span>
               </div>
             `
           )
           .join("")}
       </div>
-      <div class="risk-track" aria-hidden="true">
-        ${layer.riskDistribution.summary
-          .map((item) => {
-            const percentage = (Number(item.amount.replace(/[^\d]/g, "")) / total) * 100;
-            return `<span style="width:${percentage}%; background:${item.color}"></span>`;
-          })
-          .join("")}
-      </div>
-      <p class="muted">${layer.riskDistribution.note}</p>
-      <div class="risk-legend">
-        ${layer.riskDistribution.summary
-          .map((item) => {
-            const percentage = ((Number(item.amount.replace(/[^\d]/g, "")) / total) * 100).toFixed(1);
-            return `
-              <div class="risk-legend-item">
-                <span class="risk-dot" style="background:${item.color}"></span>
-                <div>
-                  <strong>${item.label}</strong>
-                  <div class="muted">${item.count} · ${item.amount}</div>
+      <div class="risk-rating-cards">
+        ${layer.riskRatings.categories
+          .map(
+            (item) => `
+              <article class="risk-rating-card">
+                <div class="risk-rating-card__top">
+                  <h4>${item.category}</h4>
+                  <span class="delta-chip tone-${item.tone}">${item.level}</span>
                 </div>
-                <span>${percentage}%</span>
-              </div>
-            `;
-          })
+                <div class="risk-rating-card__metrics">
+                  <span>呆滞率 ${item.stagnantRate}</span>
+                  <span>库销比 ${item.stockSalesRatio}</span>
+                  <span>周转天数 ${item.turnoverDays}</span>
+                </div>
+                <p>${item.explanation}</p>
+              </article>
+            `
+          )
           .join("")}
       </div>
     `;
@@ -321,53 +355,102 @@
     target.append(wrap, legend);
   }
 
-  function renderTop10(layer) {
-    const target = document.querySelector(".js-top10-chart");
+  function renderTrendSection(layer) {
+    const scopeOptions = layer.trendScopeOptions || ["总体"];
+    let activeOutboundScope = scopeOptions[0];
+    let activeBalanceScope = scopeOptions[0];
+
+    const outboundSwitch = document.querySelector(".js-outbound-scope-switch");
+    const balanceSwitch = document.querySelector(".js-balance-scope-switch");
+
+    function paintOutbound() {
+      const data = layer.outboundInboundByScope?.[activeOutboundScope];
+      if (data) {
+        renderLineChart(".js-outbound-inbound-chart", data, `出入库趋势-${activeOutboundScope}`);
+      }
+    }
+
+    function paintBalance() {
+      const data = layer.balanceTrendByScope?.[activeBalanceScope];
+      if (data) {
+        renderLineChart(".js-balance-chart", data, `库存余额趋势-${activeBalanceScope}`);
+      }
+    }
+
+    function bindOutboundSwitch() {
+      renderSegmentSwitch(outboundSwitch, scopeOptions, activeOutboundScope, (next) => {
+        activeOutboundScope = next;
+        bindOutboundSwitch();
+        paintOutbound();
+      });
+    }
+
+    function bindBalanceSwitch() {
+      renderSegmentSwitch(balanceSwitch, scopeOptions, activeBalanceScope, (next) => {
+        activeBalanceScope = next;
+        bindBalanceSwitch();
+        paintBalance();
+      });
+    }
+
+    bindOutboundSwitch();
+    bindBalanceSwitch();
+
+    paintOutbound();
+    paintBalance();
+  }
+
+  function renderStagnantTable(target, rows, activeSort) {
     if (!target) return;
 
-    const maxValue = Math.max(...layer.top10.map((item) => item.value));
-    target.innerHTML = layer.top10
-      .map((item) => {
-        const width = (item.value / maxValue) * 100;
+    target.innerHTML = rows
+      .map((item, index) => {
+        const primaryValue = activeSort === "按金额" ? formatAmount(item.amount) : formatQuantity(item.quantity);
+        const secondaryValue = activeSort === "按金额" ? formatQuantity(item.quantity) : formatAmount(item.amount);
+
         return `
-          <div class="rank-item">
-            <div class="rank-label">
-              <strong>${item.label}</strong>
-              <span>${item.meta}</span>
-            </div>
-            <div class="rank-bar"><span style="width:${width}%"></span></div>
-            <div class="rank-value">${item.textValue}</div>
+          <div class="rank-table-row">
+            <span class="rank-index">${String(index + 1).padStart(2, "0")}</span>
+            <span class="rank-name">${item.name}</span>
+            <span class="rank-primary">${primaryValue}</span>
+            <span class="rank-secondary">${secondaryValue}</span>
           </div>
         `;
       })
       .join("");
   }
 
-  function renderAlerts(layer) {
-    const target = document.querySelector(".js-alert-list");
-    if (!target) return;
+  function renderStagnantAnalysis(layer) {
+    const section = layer.stagnantAnalysis;
+    if (!section) return;
 
-    target.innerHTML = layer.alerts
-      .map(
-        (alert) => `
-          <article class="alert-card">
-            <div class="alert-card__top">
-              <h4>${alert.title}</h4>
-              <span class="delta-chip tone-${alert.tone}">${alert.level}</span>
-            </div>
-            <p>${alert.body}</p>
-          </article>
-        `
-      )
-      .join("");
+    const categoryTarget = document.querySelector(".js-stagnant-category");
+    const warehouseTarget = document.querySelector(".js-stagnant-warehouse");
+    const switchTarget = document.querySelector(".js-stagnant-sort-switch");
+    let activeSort = section.defaultSort;
+
+    function paintTables() {
+      renderStagnantTable(categoryTarget, section.categoryTop10?.[activeSort] || [], activeSort);
+      renderStagnantTable(warehouseTarget, section.warehouseTop10?.[activeSort] || [], activeSort);
+    }
+
+    function bindSortSwitch() {
+      renderSegmentSwitch(switchTarget, section.sortOptions, activeSort, (next) => {
+        activeSort = next;
+        bindSortSwitch();
+        paintTables();
+      });
+    }
+
+    bindSortSwitch();
+    paintTables();
   }
 
   window.renderOverviewPage = function renderOverviewPage(layer) {
     renderKpis(layer);
     renderHealthScore(layer);
-    renderRiskDistribution(layer);
-    renderLineChart(".js-outbound-inbound-chart", layer.outboundInbound, "出库量与入库量趋势图");
-    renderLineChart(".js-balance-chart", layer.balanceTrend, "库存余额趋势图");
-    renderTop10(layer);
+    renderRiskRatings(layer);
+    renderTrendSection(layer);
+    renderStagnantAnalysis(layer);
   };
 })();

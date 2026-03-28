@@ -8,25 +8,28 @@
   </head>
   <body data-layer="layer1">
     <div class="app-shell">
-      <header class="site-header site-header--compact panel">
-        <div class="site-header__top">
+      <header class="site-header panel">
+        <div class="site-header__top site-header__top--layer1">
           <div class="site-header__brand">
-            <p class="eyebrow">库存分析 BI 看板</p>
-            <h1>第一层 · 战略总览</h1>
+            <h1>库存分析BI看板</h1>
+            <p class="site-header__summary">第一层 · 库存战略总览</p>
+          </div>
+          <div class="site-header__meta">
+            <span class="pill pill-muted">数据更新时间 <strong class="js-updated-at">--</strong></span>
           </div>
         </div>
         <nav class="layer-nav" aria-label="层级导航">
-          <a href="./index.html" data-nav="layer1">第一层<br /><span>战略总览</span></a>
-          <a href="./layer-2.html" data-nav="layer2">第二层<br /><span>结构分析</span></a>
-          <a href="./layer-3.html" data-nav="layer3">第三层<br /><span>预警与补货</span></a>
-          <a href="./layer-4.html" data-nav="layer4">第四层<br /><span>诊断与模拟</span></a>
+          <a href="./index.html" data-nav="layer1">库存战略总览</a>
+          <a href="./layer-2.html" data-nav="layer2">结构分析</a>
+          <a href="./layer-3.html" data-nav="layer3">预警与补货</a>
+          <a href="./layer-4.html" data-nav="layer4">诊断与模拟</a>
         </nav>
       </header>
 
       <main class="page-stack">
         <section class="toolbar panel js-toolbar" aria-label="筛选区"></section>
 
-        <section class="metrics-grid js-kpi-grid" aria-label="核心指标卡"></section>
+        <section class="kpi-group-stack js-kpi-groups" aria-label="核心指标卡"></section>
 
         <section class="overview-grid">
           <article class="panel panel-spotlight">
@@ -50,11 +53,11 @@
             <div class="panel-heading">
               <div>
                 <p class="panel-kicker">关键风险预警</p>
-                <h3>库存风险评级</h3>
+                <h3>库存风险评级（按品类）</h3>
               </div>
-              <span class="pill pill-warning">高/中/低分层</span>
+              <span class="pill pill-warning">高 / 中 / 低风险</span>
             </div>
-            <div class="risk-stage js-risk-distribution"></div>
+            <div class="risk-rating-list js-risk-rating-list"></div>
           </article>
         </section>
 
@@ -63,9 +66,9 @@
             <div class="panel-heading">
               <div>
                 <p class="panel-kicker">趋势对照</p>
-                <h3>出库量 vs 入库量趋势</h3>
+                <h3>出库量 vs 入库量（近3个月）</h3>
               </div>
-              <span class="pill pill-muted">近 12 周</span>
+              <div class="panel-switch js-outbound-scope-switch" aria-label="出入库趋势口径切换"></div>
             </div>
             <div class="chart-stage js-outbound-inbound-chart"></div>
           </article>
@@ -74,9 +77,9 @@
             <div class="panel-heading">
               <div>
                 <p class="panel-kicker">库存余额</p>
-                <h3>库存余额趋势</h3>
+                <h3>库存余额趋势（近3个月）</h3>
               </div>
-              <span class="pill pill-muted">近 12 周</span>
+              <div class="panel-switch js-balance-scope-switch" aria-label="库存余额趋势口径切换"></div>
             </div>
             <div class="chart-stage js-balance-chart"></div>
           </article>
@@ -86,12 +89,21 @@
           <article class="panel">
             <div class="panel-heading">
               <div>
-                <p class="panel-kicker">Top 10 风险排位</p>
-                <h3>呆滞库存重点关注对象</h3>
+                <p class="panel-kicker">关键风险预警</p>
+                <h3>呆滞库存分析</h3>
               </div>
-              <span class="pill pill-danger">金额 + 天数</span>
+              <div class="panel-switch js-stagnant-sort-switch" aria-label="呆滞分析排序切换"></div>
             </div>
-            <div class="rank-stage js-top10-chart"></div>
+            <div class="stagnant-grid">
+              <article class="stagnant-table-card">
+                <h4>Top10 品类</h4>
+                <div class="rank-table js-stagnant-category"></div>
+              </article>
+              <article class="stagnant-table-card">
+                <h4>Top10 仓库</h4>
+                <div class="rank-table js-stagnant-warehouse"></div>
+              </article>
+            </div>
           </article>
         </section>
       </main>

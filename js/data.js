@@ -2,7 +2,7 @@ window.inventoryBIPrototype = {
   meta: {
     title: "库存分析 BI 看板",
     stage: "静态原型首版",
-    updatedAt: "2026-03-27 16:30",
+    updatedAt: "2026年3月27日 04:23:16",
     sources: [
       { name: "库存分析BI看板.md", href: "./PRD/库存分析BI看板.md" },
       { name: "库存分析BI看板_前3层指标对应图表建议.md", href: "./PRD/库存分析BI看板_前3层指标对应图表建议.md" },
@@ -11,143 +11,275 @@ window.inventoryBIPrototype = {
   },
   layers: {
     layer1: {
-      badge: "第一层 · 面向老板 / 运营总监",
       title: "库存战略总览看板",
-      summary: "一眼看清库存规模、资金占用和关键风险，服务老板和运营总监的首屏驾驶舱。",
-      tags: ["总览优先", "资金视角", "风险首屏可见"],
       filters: [
-        { label: "时间范围", value: "近 90 天" },
-        { label: "国家 / 站点", value: "全站点总览" },
+        { label: "货号", value: "全部货号" },
+        { label: "品类", value: "全部品类" },
+        { label: "站点", value: "全部站点" },
+        { label: "店铺", value: "全部店铺" },
+        { label: "运营负责人", value: "全部负责人" },
+        { label: "时间区间", value: "2026年3月-2026年3月" },
       ],
-      metrics: [
-        {
-          title: "总库存量",
-          value: "128,460",
-          unit: "件",
-          caption: "国内仓 + FBA + 在途",
-          status: "focus",
-          deltas: [
-            { label: "MoM", value: "+5.2%", tone: "warning" },
-            { label: "YoY", value: "+12.6%", tone: "warning" },
+      kpiGroups: {
+        inventoryScale: {
+          title: "库存规模",
+          hint: "库存快照口径，不随时间区间变化",
+          showDeltas: false,
+          metrics: [
+            { title: "总库存量", value: "128,460", unit: "双", caption: "男鞋 + 女鞋 + 童鞋 + 在途" },
+            { title: "总库存金额", value: "¥12,860,000", unit: "", caption: "库存资金占用" },
+            { title: "在途库存量", value: "18,240", unit: "双", caption: "海运 / 空运 / 清关中" },
+            { title: "FBA 在库数量", value: "54,900", unit: "双", caption: "平台仓鞋类在库快照" },
           ],
-          sparkline: [84, 92, 88, 95, 106, 112, 118, 126],
         },
-        {
-          title: "总库存金额",
-          value: "¥ 1,286 万",
-          unit: "",
-          caption: "资金占用核心口径",
-          deltas: [
-            { label: "MoM", value: "+4.1%", tone: "warning" },
-            { label: "YoY", value: "+9.8%", tone: "warning" },
+        turnoverEfficiency: {
+          title: "周转效率",
+          hint: "受筛选条件影响",
+          showDeltas: true,
+          metrics: [
+            {
+              title: "库存周转天数",
+              value: "47",
+              unit: "天",
+              caption: "统计期天数 / 库存周转次数",
+              deltas: [
+                { label: "MoM", value: "-1.8%", tone: "negative" },
+                { label: "YoY", value: "-6.5%", tone: "negative" },
+              ],
+            },
+            {
+              title: "库存周转率",
+              value: "1.92",
+              unit: "次",
+              caption: "销售成本 / 平均库存成本",
+              deltas: [
+                { label: "MoM", value: "+3.2%", tone: "positive" },
+                { label: "YoY", value: "+5.8%", tone: "positive" },
+              ],
+            },
+            {
+              title: "动销比",
+              value: "72.4",
+              unit: "%",
+              caption: "出库 SKU / 总 SKU",
+              deltas: [
+                { label: "MoM", value: "+1.1%", tone: "positive" },
+                { label: "YoY", value: "+4.3%", tone: "positive" },
+              ],
+            },
+            {
+              title: "库销比",
+              value: "1.38",
+              unit: "",
+              caption: "期末库存量 / 统计期销量",
+              deltas: [
+                { label: "MoM", value: "-2.4%", tone: "negative" },
+                { label: "YoY", value: "-3.9%", tone: "negative" },
+              ],
+            },
           ],
-          sparkline: [76, 80, 79, 82, 85, 87, 91, 95],
         },
-        {
-          title: "在途库存量",
-          value: "18,240",
-          unit: "件",
-          caption: "海运 / 空运 / 清关中",
-          deltas: [
-            { label: "MoM", value: "+11.3%", tone: "negative" },
-            { label: "YoY", value: "+3.7%", tone: "neutral" },
-          ],
-          sparkline: [32, 35, 34, 38, 42, 46, 49, 57],
+        fundingRisk: {
+          title: "资金风险",
+          hint: "支持数量/金额口径与仓别切换",
+          valueTypeOptions: ["金额口径", "数量口径"],
+          warehouseOptions: ["总体", "平台仓", "本地仓"],
+          defaultValueType: "金额口径",
+          defaultWarehouse: "总体",
+          metricsByView: {
+            金额口径: {
+              总体: [
+                { title: "资金周转率", value: "1.54", unit: "", caption: "暂占位，待业务确认保留" },
+                { title: "呆滞库存率", value: "12.8", unit: "%", caption: "呆滞库存金额 / 总库存金额" },
+                { title: "滞销库存占比", value: "9.6", unit: "%", caption: "滞销库存金额 / 总库存金额" },
+                { title: "库容利用率", value: "78.3", unit: "%", caption: "总体仓容利用水平" },
+              ],
+              平台仓: [
+                { title: "资金周转率", value: "1.62", unit: "", caption: "暂占位，待业务确认保留" },
+                { title: "呆滞库存率", value: "10.2", unit: "%", caption: "平台仓呆滞金额占比" },
+                { title: "滞销库存占比", value: "8.1", unit: "%", caption: "平台仓滞销金额占比" },
+                { title: "库容利用率", value: "81.5", unit: "%", caption: "平台仓仓容利用率" },
+              ],
+              本地仓: [
+                { title: "资金周转率", value: "1.43", unit: "", caption: "暂占位，待业务确认保留" },
+                { title: "呆滞库存率", value: "15.4", unit: "%", caption: "本地仓呆滞金额占比" },
+                { title: "滞销库存占比", value: "11.8", unit: "%", caption: "本地仓滞销金额占比" },
+                { title: "库容利用率", value: "73.9", unit: "%", caption: "本地仓仓容利用率" },
+              ],
+            },
+            数量口径: {
+              总体: [
+                { title: "资金周转率", value: "1.54", unit: "", caption: "暂占位，待业务确认保留" },
+                { title: "呆滞库存率", value: "11.6", unit: "%", caption: "呆滞库存数量 / 总库存数量" },
+                { title: "滞销库存占比", value: "8.8", unit: "%", caption: "滞销库存数量 / 总库存数量" },
+                { title: "库容利用率", value: "78.3", unit: "%", caption: "总体仓容利用水平" },
+              ],
+              平台仓: [
+                { title: "资金周转率", value: "1.62", unit: "", caption: "暂占位，待业务确认保留" },
+                { title: "呆滞库存率", value: "9.4", unit: "%", caption: "平台仓呆滞数量占比" },
+                { title: "滞销库存占比", value: "7.9", unit: "%", caption: "平台仓滞销数量占比" },
+                { title: "库容利用率", value: "81.5", unit: "%", caption: "平台仓仓容利用率" },
+              ],
+              本地仓: [
+                { title: "资金周转率", value: "1.43", unit: "", caption: "暂占位，待业务确认保留" },
+                { title: "呆滞库存率", value: "14.3", unit: "%", caption: "本地仓呆滞数量占比" },
+                { title: "滞销库存占比", value: "10.8", unit: "%", caption: "本地仓滞销数量占比" },
+                { title: "库容利用率", value: "73.9", unit: "%", caption: "本地仓仓容利用率" },
+              ],
+            },
+          },
         },
-        {
-          title: "FBA 在库数量",
-          value: "54,900",
-          unit: "件",
-          caption: "演示口径：含可售与处理中",
-          deltas: [
-            { label: "MoM", value: "-1.9%", tone: "positive" },
-            { label: "YoY", value: "+6.1%", tone: "neutral" },
-          ],
-          sparkline: [58, 60, 61, 59, 58, 56, 55, 54],
-        },
-        {
-          title: "库存周转天数",
-          value: "47",
-          unit: "天",
-          caption: "近 90 天口径示意",
-          deltas: [
-            { label: "MoM", value: "-6.0%", tone: "positive" },
-            { label: "YoY", value: "-8.7%", tone: "positive" },
-          ],
-          sparkline: [68, 63, 61, 58, 56, 53, 51, 47],
-        },
-        {
-          title: "动销率",
-          value: "72.4",
-          unit: "%",
-          caption: "有销量 SKU / 总 SKU",
-          deltas: [
-            { label: "MoM", value: "+2.4%", tone: "positive" },
-            { label: "YoY", value: "+4.9%", tone: "positive" },
-          ],
-          sparkline: [54, 58, 59, 63, 66, 68, 70, 72],
-        },
-      ],
+      },
       healthScore: {
-        score: 82,
+        score: 81,
         grade: "良好",
-        summary: "整体库存仍处于可控区间，周转改善明显，但华东仓呆滞与在途偏高仍然拉低了资金效率。",
+        summary: "鞋类库存健康度处于良好区间，基础款周转稳定，但季节款与断码尾货导致呆滞风险偏高。",
         factors: [
-          { label: "周转效率", value: 86, tone: "positive" },
-          { label: "库存结构", value: 79, tone: "neutral" },
-          { label: "呆滞风险", value: 71, tone: "warning" },
-          { label: "仓容压力", value: 84, tone: "positive" },
+          { label: "库存规模", value: 84, tone: "positive" },
+          { label: "周转效率", value: 79, tone: "neutral" },
+          { label: "资金风险", value: 74, tone: "warning" },
+          { label: "仓容利用率", value: 87, tone: "positive" },
         ],
       },
-      riskDistribution: {
+      riskRatings: {
         summary: [
-          { label: "高风险", count: "12 个", amount: "¥310 万", color: "#cb5a48" },
-          { label: "中风险", count: "26 个", amount: "¥420 万", color: "#bf7b22" },
-          { label: "低风险", count: "41 个", amount: "¥556 万", color: "#2d8b65" },
+          { level: "高风险", count: 11, tone: "negative" },
+          { level: "中风险", count: 21, tone: "warning" },
+          { level: "低风险", count: 34, tone: "positive" },
         ],
-        note: "高风险主要集中在华东仓与欧洲站慢销 SKU，中风险更多来自在途累积和周转偏慢的品类。",
-      },
-      outboundInbound: {
-        labels: ["1W", "2W", "3W", "4W", "5W", "6W", "7W", "8W", "9W", "10W", "11W", "12W"],
-        series: [
-          { name: "出库量", color: "#0f7068", fill: "#0f7068", data: [410, 435, 452, 470, 482, 500, 515, 526, 548, 566, 582, 608] },
-          { name: "入库量", color: "#bf7b22", fill: "#bf7b22", data: [520, 545, 562, 570, 586, 594, 603, 598, 586, 571, 559, 548] },
+        categories: [
+          {
+            category: "跑步鞋",
+            level: "高风险",
+            tone: "negative",
+            stagnantRate: "31.8%",
+            stockSalesRatio: "2.42",
+            turnoverDays: "118 天",
+            explanation: "41/42 码库存积压明显，导致呆滞率和周转天数同时偏高，需加快尺码结构清理。",
+          },
+          {
+            category: "休闲板鞋",
+            level: "中风险",
+            tone: "warning",
+            stagnantRate: "17.2%",
+            stockSalesRatio: "1.68",
+            turnoverDays: "79 天",
+            explanation: "近 30 天销量走弱导致库销比上行，建议下调补货并同步推进折扣活动。",
+          },
+          {
+            category: "女士高跟鞋",
+            level: "高风险",
+            tone: "negative",
+            stagnantRate: "28.7%",
+            stockSalesRatio: "2.09",
+            turnoverDays: "109 天",
+            explanation: "季节性需求回落后销量快速下滑，周转天数持续抬升，形成高风险积压。",
+          },
+          {
+            category: "儿童运动鞋",
+            level: "低风险",
+            tone: "positive",
+            stagnantRate: "7.6%",
+            stockSalesRatio: "1.05",
+            turnoverDays: "41 天",
+            explanation: "补货节奏与销量匹配度较高，当前风险主要来自单站点促销波动。",
+          },
         ],
       },
-      balanceTrend: {
-        labels: ["1W", "2W", "3W", "4W", "5W", "6W", "7W", "8W", "9W", "10W", "11W", "12W"],
-        series: [
-          { name: "库存余额", color: "#4d7397", fill: "#4d7397", area: true, data: [1280, 1292, 1304, 1311, 1308, 1296, 1285, 1272, 1264, 1258, 1249, 1236] },
-        ],
+      trendScopeOptions: ["总体", "平台仓", "本地仓"],
+      outboundInboundByScope: {
+        总体: {
+          labels: ["01-03", "01-11", "01-19", "01-27", "02-04", "02-12", "02-20", "02-28", "03-07", "03-15", "03-23", "03-31"],
+          series: [
+            { name: "出库量", color: "#0f7068", fill: "#0f7068", data: [412, 426, 441, 458, 472, 486, 503, 519, 534, 548, 562, 577] },
+            { name: "入库量", color: "#bf7b22", fill: "#bf7b22", data: [468, 482, 495, 501, 508, 516, 523, 519, 510, 502, 494, 488] },
+          ],
+        },
+        平台仓: {
+          labels: ["01-03", "01-11", "01-19", "01-27", "02-04", "02-12", "02-20", "02-28", "03-07", "03-15", "03-23", "03-31"],
+          series: [
+            { name: "出库量", color: "#0f7068", fill: "#0f7068", data: [301, 315, 326, 338, 351, 362, 374, 389, 401, 413, 426, 438] },
+            { name: "入库量", color: "#bf7b22", fill: "#bf7b22", data: [328, 336, 347, 354, 361, 368, 373, 369, 364, 358, 352, 345] },
+          ],
+        },
+        本地仓: {
+          labels: ["01-03", "01-11", "01-19", "01-27", "02-04", "02-12", "02-20", "02-28", "03-07", "03-15", "03-23", "03-31"],
+          series: [
+            { name: "出库量", color: "#0f7068", fill: "#0f7068", data: [111, 113, 115, 120, 121, 124, 129, 130, 133, 135, 136, 139] },
+            { name: "入库量", color: "#bf7b22", fill: "#bf7b22", data: [140, 146, 148, 147, 147, 148, 150, 150, 146, 144, 142, 143] },
+          ],
+        },
       },
-      top10: [
-        { label: "欧洲站家居清洁", meta: "呆滞 212 天 · 华东仓", value: 84, textValue: "¥84 万" },
-        { label: "美国站收纳挂架", meta: "呆滞 189 天 · FBA", value: 76, textValue: "¥76 万" },
-        { label: "德国站厨房配件", meta: "呆滞 178 天 · CN 仓", value: 69, textValue: "¥69 万" },
-        { label: "加拿大站园艺套装", meta: "呆滞 171 天 · 华南仓", value: 63, textValue: "¥63 万" },
-        { label: "英国站衣物护理", meta: "呆滞 163 天 · FBA", value: 58, textValue: "¥58 万" },
-        { label: "日本站旅行配件", meta: "呆滞 152 天 · CN 仓", value: 55, textValue: "¥55 万" },
-      ],
-      alerts: [
-        {
-          level: "高风险",
-          tone: "negative",
-          title: "华东仓慢销库存持续攀升",
-          body: "近 6 周库存金额提升 14%，但对应销售占比没有同步增加，建议在下一轮原型中补充品类拆解与促销动作入口。",
+      balanceTrendByScope: {
+        总体: {
+          labels: ["01-03", "01-11", "01-19", "01-27", "02-04", "02-12", "02-20", "02-28", "03-07", "03-15", "03-23", "03-31"],
+          series: [{ name: "库存余额", color: "#4d7397", fill: "#4d7397", area: true, data: [1294, 1302, 1316, 1321, 1314, 1308, 1296, 1287, 1278, 1271, 1262, 1256] }],
         },
-        {
-          level: "关注",
-          tone: "warning",
-          title: "在途库存增加快于出库改善",
-          body: "当前在途量较上月提升 11.3%，若后续到货集中释放，可能进一步推高仓容与慢销压力。",
+        平台仓: {
+          labels: ["01-03", "01-11", "01-19", "01-27", "02-04", "02-12", "02-20", "02-28", "03-07", "03-15", "03-23", "03-31"],
+          series: [{ name: "库存余额", color: "#4d7397", fill: "#4d7397", area: true, data: [802, 807, 816, 821, 818, 811, 804, 798, 790, 784, 779, 772] }],
         },
-        {
-          level: "改善中",
-          tone: "positive",
-          title: "库存周转天数连续三期下降",
-          body: "虽然整体仍需控制慢销与高库存站点，但总盘面周转已经进入更健康的区间，适合在汇报中作为正向信号展示。",
+        本地仓: {
+          labels: ["01-03", "01-11", "01-19", "01-27", "02-04", "02-12", "02-20", "02-28", "03-07", "03-15", "03-23", "03-31"],
+          series: [{ name: "库存余额", color: "#4d7397", fill: "#4d7397", area: true, data: [492, 495, 500, 500, 496, 497, 492, 489, 488, 487, 483, 484] }],
         },
-      ],
+      },
+      stagnantAnalysis: {
+        sortOptions: ["按金额", "按数量"],
+        defaultSort: "按金额",
+        categoryTop10: {
+          按金额: [
+            { name: "跑步鞋", amount: 1240000, quantity: 18600 },
+            { name: "休闲板鞋", amount: 1160000, quantity: 17420 },
+            { name: "女士高跟鞋", amount: 1080000, quantity: 14980 },
+            { name: "马丁靴", amount: 990000, quantity: 13260 },
+            { name: "篮球鞋", amount: 930000, quantity: 12540 },
+            { name: "儿童运动鞋", amount: 862000, quantity: 16680 },
+            { name: "登山徒步鞋", amount: 805000, quantity: 9420 },
+            { name: "凉鞋", amount: 768000, quantity: 15430 },
+            { name: "皮鞋", amount: 724000, quantity: 9860 },
+            { name: "帆布鞋", amount: 689000, quantity: 14320 },
+          ],
+          按数量: [
+            { name: "跑步鞋", amount: 1240000, quantity: 18600 },
+            { name: "休闲板鞋", amount: 1160000, quantity: 17420 },
+            { name: "儿童运动鞋", amount: 862000, quantity: 16680 },
+            { name: "凉鞋", amount: 768000, quantity: 15430 },
+            { name: "女士高跟鞋", amount: 1080000, quantity: 14980 },
+            { name: "帆布鞋", amount: 689000, quantity: 14320 },
+            { name: "马丁靴", amount: 990000, quantity: 13260 },
+            { name: "篮球鞋", amount: 930000, quantity: 12540 },
+            { name: "皮鞋", amount: 724000, quantity: 9860 },
+            { name: "登山徒步鞋", amount: 805000, quantity: 9420 },
+          ],
+        },
+        warehouseTop10: {
+          按金额: [
+            { name: "华东鞋靴本地仓", amount: 1660000, quantity: 23420 },
+            { name: "华南鞋靴本地仓", amount: 1480000, quantity: 21060 },
+            { name: "美西鞋类平台仓", amount: 1320000, quantity: 19340 },
+            { name: "欧盟鞋类平台仓", amount: 1210000, quantity: 17180 },
+            { name: "美东鞋类平台仓", amount: 1130000, quantity: 16240 },
+            { name: "日本鞋类平台仓", amount: 1020000, quantity: 14820 },
+            { name: "英国鞋类平台仓", amount: 960000, quantity: 13960 },
+            { name: "加拿大鞋类平台仓", amount: 902000, quantity: 13110 },
+            { name: "华北鞋靴本地仓", amount: 856000, quantity: 12460 },
+            { name: "华中鞋靴本地仓", amount: 812000, quantity: 11780 },
+          ],
+          按数量: [
+            { name: "华东鞋靴本地仓", amount: 1660000, quantity: 23420 },
+            { name: "华南鞋靴本地仓", amount: 1480000, quantity: 21060 },
+            { name: "美西鞋类平台仓", amount: 1320000, quantity: 19340 },
+            { name: "欧盟鞋类平台仓", amount: 1210000, quantity: 17180 },
+            { name: "美东鞋类平台仓", amount: 1130000, quantity: 16240 },
+            { name: "日本鞋类平台仓", amount: 1020000, quantity: 14820 },
+            { name: "英国鞋类平台仓", amount: 960000, quantity: 13960 },
+            { name: "加拿大鞋类平台仓", amount: 902000, quantity: 13110 },
+            { name: "华北鞋靴本地仓", amount: 856000, quantity: 12460 },
+            { name: "华中鞋靴本地仓", amount: 812000, quantity: 11780 },
+          ],
+        },
+      },
     },
     layer2: {
       badge: "第二层 · 面向采购 / 运营 / 计划",
