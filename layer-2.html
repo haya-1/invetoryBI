@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>库存分析BI看板 · 第二层结构分析</title>
+    <link rel="stylesheet" href="./css/main.css" />
+  </head>
+  <body data-layer="layer2">
+    <div class="app-shell">
+      <header class="site-header site-header--compact panel">
+        <div class="site-header__top">
+          <div class="site-header__brand">
+            <p class="eyebrow">库存分析 BI 看板</p>
+            <h1>第二层 · 结构分析</h1>
+          </div>
+        </div>
+        <nav class="layer-nav" aria-label="层级导航">
+          <a href="./index.html" data-nav="layer1">第一层<br /><span>战略总览</span></a>
+          <a href="./layer-2.html" data-nav="layer2">第二层<br /><span>结构分析</span></a>
+          <a href="./layer-3.html" data-nav="layer3">第三层<br /><span>预警与补货</span></a>
+          <a href="./layer-4.html" data-nav="layer4">第四层<br /><span>诊断与模拟</span></a>
+        </nav>
+      </header>
+
+      <main class="page-stack">
+        <section class="toolbar panel js-toolbar" aria-label="筛选区"></section>
+        <section class="placeholder-grid js-module-grid" aria-label="第二层基础图表区"></section>
+      </main>
+    </div>
+
+    <script src="./js/data.js"></script>
+    <script src="./js/charts/overview.js"></script>
+    <script src="./js/app.js"></script>
+  </body>
+</html>

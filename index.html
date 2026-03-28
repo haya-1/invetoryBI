@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>库存分析BI看板 · 第一层战略总览</title>
+    <link rel="stylesheet" href="./css/main.css" />
+  </head>
+  <body data-layer="layer1">
+    <div class="app-shell">
+      <header class="site-header site-header--compact panel">
+        <div class="site-header__top">
+          <div class="site-header__brand">
+            <p class="eyebrow">库存分析 BI 看板</p>
+            <h1>第一层 · 战略总览</h1>
+          </div>
+        </div>
+        <nav class="layer-nav" aria-label="层级导航">
+          <a href="./index.html" data-nav="layer1">第一层<br /><span>战略总览</span></a>
+          <a href="./layer-2.html" data-nav="layer2">第二层<br /><span>结构分析</span></a>
+          <a href="./layer-3.html" data-nav="layer3">第三层<br /><span>预警与补货</span></a>
+          <a href="./layer-4.html" data-nav="layer4">第四层<br /><span>诊断与模拟</span></a>
+        </nav>
+      </header>
+
+      <main class="page-stack">
+        <section class="toolbar panel js-toolbar" aria-label="筛选区"></section>
+
+        <section class="metrics-grid js-kpi-grid" aria-label="核心指标卡"></section>
+
+        <section class="overview-grid">
+          <article class="panel panel-spotlight">
+            <div class="panel-heading">
+              <div>
+                <p class="panel-kicker">整体健康仪表盘</p>
+                <h3>库存健康度评分</h3>
+              </div>
+              <span class="pill pill-primary">战略总分</span>
+            </div>
+            <div class="score-panel">
+              <div class="score-stage js-health-score-chart" aria-hidden="true"></div>
+              <div class="score-details">
+                <p class="score-summary js-health-score-summary">--</p>
+                <div class="score-factors js-health-score-factors"></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="panel-kicker">关键风险预警</p>
+                <h3>库存风险评级</h3>
+              </div>
+              <span class="pill pill-warning">高/中/低分层</span>
+            </div>
+            <div class="risk-stage js-risk-distribution"></div>
+          </article>
+        </section>
+
+        <section class="trend-grid">
+          <article class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="panel-kicker">趋势对照</p>
+                <h3>出库量 vs 入库量趋势</h3>
+              </div>
+              <span class="pill pill-muted">近 12 周</span>
+            </div>
+            <div class="chart-stage js-outbound-inbound-chart"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="panel-kicker">库存余额</p>
+                <h3>库存余额趋势</h3>
+              </div>
+              <span class="pill pill-muted">近 12 周</span>
+            </div>
+            <div class="chart-stage js-balance-chart"></div>
+          </article>
+        </section>
+
+        <section class="single-panel-grid">
+          <article class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="panel-kicker">Top 10 风险排位</p>
+                <h3>呆滞库存重点关注对象</h3>
+              </div>
+              <span class="pill pill-danger">金额 + 天数</span>
+            </div>
+            <div class="rank-stage js-top10-chart"></div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="./js/data.js"></script>
+    <script src="./js/charts/overview.js"></script>
+    <script src="./js/app.js"></script>
+  </body>
+</html>
