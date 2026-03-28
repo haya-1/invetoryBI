@@ -1602,6 +1602,35 @@ a {
   stroke-width: 2;
 }
 
+.aging-dist-area {
+  fill: rgba(79, 126, 212, 0.34);
+}
+
+.aging-dist-line {
+  fill: none;
+  stroke: #2f6edf;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.aging-dist-point {
+  fill: #fff;
+  stroke: #2f6edf;
+  stroke-width: 2.6;
+}
+
+.aging-dist-value {
+  fill: #2f4f86;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: "Microsoft YaHei UI", sans-serif;
+}
+
+.aging-dist-svg .chart-axis-label {
+  font-size: 11px;
+}
+
 @media (max-width: 1320px) {
   .layer2-abc-grid,
   .layer2-ranking-grid,

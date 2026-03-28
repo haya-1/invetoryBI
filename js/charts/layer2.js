@@ -28,6 +28,12 @@
     return value.toLocaleString("zh-CN");
   }
 
+  function formatWan(value) {
+    if (Number.isInteger(value) && value >= 1000) return `${value}万`;
+    if (value >= 100) return `${value.toFixed(1).replace(/\.0$/, "")}万`;
+    return `${value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")}万`;
+  }
+
   function renderSegmentSwitch(target, options, activeValue, onChange) {
     if (!target) return;
     target.innerHTML = options
@@ -132,7 +138,7 @@
       "font-size": "11",
       fill: "#5f7477",
     });
-    note.textContent = "ABC 聚合占比";
+    note.textContent = "结构占比";
     svg.appendChild(note);
 
     target.innerHTML = "";
@@ -145,7 +151,7 @@
         (item) => `
           <div class="abc-legend-item">
             <span class="abc-legend-dot" style="background:${item.color}"></span>
-            <span>${item.tier}</span>
+            <span>${item.tier || item.label}</span>
             <strong>${item.value}%</strong>
           </div>
         `
@@ -270,84 +276,90 @@
     target.append(wrap, legend);
   }
 
-  function renderAreaTrend(target, trendData) {
-    if (!target || !trendData) return;
+  function renderAgingDistributionChart(target, points) {
+    if (!target || !Array.isArray(points) || points.length === 0) return;
 
-    const width = 720;
-    const height = 280;
-    const margin = { top: 20, right: 18, bottom: 40, left: 42 };
-    const allValues = trendData.series.flatMap((item) => item.data);
-    const min = Math.min(...allValues);
-    const max = Math.max(...allValues);
+    const width = 780;
+    const height = 300;
+    const margin = { top: 26, right: 18, bottom: 56, left: 58 };
+    const values = points.map((item) => item.amountWan);
+    const max = Math.max(...values);
+    const min = 0;
     const span = max - min || 1;
-    const xStep = (width - margin.left - margin.right) / (trendData.labels.length - 1 || 1);
+    const xStep = (width - margin.left - margin.right) / (points.length - 1 || 1);
+
+    const scaled = points.map((item, index) => ({
+      ...item,
+      x: margin.left + index * xStep,
+      y: margin.top + ((max - item.amountWan) / span) * (height - margin.top - margin.bottom),
+    }));
 
     const svg = createSvgElement("svg", {
       viewBox: `0 0 ${width} ${height}`,
       role: "img",
-      "aria-label": "库龄面积图",
+      "aria-label": "库龄分段面积图",
+      class: "aging-dist-svg",
     });
 
     for (let i = 0; i <= 4; i += 1) {
       const ratio = i / 4;
       const y = margin.top + ratio * (height - margin.top - margin.bottom);
+      const value = max - (max - min) * ratio;
+
       svg.appendChild(
         createSvgElement("line", { x1: margin.left, y1: y, x2: width - margin.right, y2: y, class: "chart-grid-line" })
       );
+
+      const axisLabel = createSvgElement("text", {
+        x: margin.left - 10,
+        y: y + 4,
+        "text-anchor": "end",
+        class: "chart-axis-label",
+      });
+      axisLabel.textContent = formatWan(value);
+      svg.appendChild(axisLabel);
     }
 
-    trendData.labels.forEach((label, index) => {
-      const x = margin.left + index * xStep;
-      const axis = createSvgElement("text", {
-        x,
-        y: height - 12,
+    svg.appendChild(
+      createSvgElement("path", {
+        d: buildAreaPath(scaled, height - margin.bottom),
+        class: "aging-dist-area",
+      })
+    );
+    svg.appendChild(
+      createSvgElement("path", {
+        d: buildLinePath(scaled),
+        class: "aging-dist-line",
+      })
+    );
+
+    scaled.forEach((point) => {
+      svg.appendChild(createSvgElement("circle", { cx: point.x, cy: point.y, r: 4.2, class: "aging-dist-point" }));
+
+      const valueLabel = createSvgElement("text", {
+        x: point.x,
+        y: point.y - 10,
+        "text-anchor": "middle",
+        class: "aging-dist-value",
+      });
+      valueLabel.textContent = formatWan(point.amountWan);
+      svg.appendChild(valueLabel);
+
+      const axisLabel = createSvgElement("text", {
+        x: point.x,
+        y: height - 14,
         "text-anchor": "middle",
         class: "chart-axis-label",
       });
-      axis.textContent = label;
-      svg.appendChild(axis);
-    });
-
-    trendData.series.forEach((series) => {
-      const points = series.data.map((value, index) => ({
-        x: margin.left + index * xStep,
-        y: margin.top + ((max - value) / span) * (height - margin.top - margin.bottom),
-      }));
-
-      svg.appendChild(
-        createSvgElement("path", {
-          d: buildAreaPath(points, height - margin.bottom),
-          class: "chart-area",
-          fill: series.fill,
-          opacity: 0.09,
-        })
-      );
-      svg.appendChild(
-        createSvgElement("path", {
-          d: buildLinePath(points),
-          class: "chart-line",
-          stroke: series.color,
-        })
-      );
+      axisLabel.textContent = point.label;
+      svg.appendChild(axisLabel);
     });
 
     target.innerHTML = "";
     const wrap = document.createElement("div");
     wrap.className = "chart-wrap";
     wrap.appendChild(svg);
-    const legend = document.createElement("div");
-    legend.className = "chart-legend";
-    legend.innerHTML = trendData.series
-      .map(
-        (series) => `
-          <span class="legend-item">
-            <span class="legend-swatch" style="background:${series.color}"></span>
-            ${series.name}
-          </span>
-        `
-      )
-      .join("");
-    target.append(wrap, legend);
+    target.appendChild(wrap);
   }
 
   function renderStorageFeeWarning(section) {
@@ -654,7 +666,7 @@
       const data = aging.dataByWarehouse?.[activeWarehouse];
       if (!data) return;
       renderDonut(root.querySelector(".js-aging-pie"), data.share, activeWarehouse);
-      renderAreaTrend(root.querySelector(".js-aging-area"), data.trend);
+      renderAgingDistributionChart(root.querySelector(".js-aging-area"), data.distribution);
     }
 
     function bindAgingSwitch() {
