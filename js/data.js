@@ -488,93 +488,262 @@ window.inventoryBIPrototype = {
       },
     },
     layer3: {
-      badge: "第三层 · 面向一线运营 / 采购 / 计划",
       title: "动态预警与补货建议看板",
-      summary: "以执行为中心，把断货预警、补货建议、时间决策与差异闭环放在同一层，方便业务快速处理。",
-      tags: ["执行导向", "主表优先", "时间轴决策"],
       filters: [
-        { label: "时间范围", value: "近 30 天" },
-        { label: "国家 / 站点", value: "多站点切换" },
+        { label: "国家", value: "美国 / 加拿大 / 英国" },
+        { label: "站点", value: "US / CA / UK / DE" },
         { label: "系列", value: "全部系列" },
         { label: "运营", value: "全部运营" },
         { label: "货号", value: "全部货号" },
-        { label: "紧急程度", value: "全部等级" },
+        { label: "时间区间", value: "2026年3月-2026年4月" },
       ],
-      modules: [
-        {
-          title: "库存预警模块",
-          description: "先把断货数量、断货比例、FBA 可售时间和必断货 SKU 的摘要区与主表位置固定下来。",
-          chart: "建议图表：预警卡片 + 条件格式明细表",
-          note: "重点看红黄绿灯机制与风险可读性。",
+      alertModule: {
+        summary: [
+          { label: "核心SKU断货数", value: 36, unit: "个", tone: "negative" },
+          { label: "重点SKU断货数", value: 58, unit: "个", tone: "warning" },
+          { label: "断货SKU比例", value: 6.8, unit: "%", tone: "negative" },
+          { label: "FBA可售时间", value: 18, unit: "天", tone: "warning" },
+          { label: "必断货SKU数", value: 24, unit: "个", tone: "negative" },
+        ],
+        thresholds: [
+          { level: "红色", rule: "<15天 极危", tone: "negative" },
+          { level: "黄色", rule: "15-30天 警告", tone: "warning" },
+          { level: "绿色", rule: "30-60天 健康", tone: "positive" },
+          { level: "蓝色", rule: ">90天 积压", tone: "neutral" },
+        ],
+        rows: [
+          { sku: "RUN-42-WHT-US", country: "美国", series: "轻量跑鞋", owner: "Amy", fbaDays: 9, stockoutRatio: 11.4, mustOut: true, predictedOutDate: "2026-04-06", level: "红色" },
+          { sku: "SNE-40-GRY-CA", country: "加拿大", series: "透气板鞋", owner: "Liam", fbaDays: 12, stockoutRatio: 9.6, mustOut: true, predictedOutDate: "2026-04-10", level: "红色" },
+          { sku: "KID-33-BLU-US", country: "美国", series: "儿童训练鞋", owner: "Nina", fbaDays: 18, stockoutRatio: 6.5, mustOut: true, predictedOutDate: "2026-04-15", level: "黄色" },
+          { sku: "BSK-44-BLK-DE", country: "德国", series: "实战篮球鞋", owner: "Sean", fbaDays: 21, stockoutRatio: 5.2, mustOut: false, predictedOutDate: "2026-04-18", level: "黄色" },
+          { sku: "CNS-39-WHT-UK", country: "英国", series: "经典帆布鞋", owner: "Ivy", fbaDays: 34, stockoutRatio: 2.9, mustOut: false, predictedOutDate: "2026-05-03", level: "绿色" },
+          { sku: "TRK-41-KHK-US", country: "美国", series: "越野徒步鞋", owner: "Amy", fbaDays: 38, stockoutRatio: 2.3, mustOut: false, predictedOutDate: "2026-05-07", level: "绿色" },
+          { sku: "SLP-40-NVY-CA", country: "加拿大", series: "舒适拖鞋", owner: "Liam", fbaDays: 58, stockoutRatio: 1.2, mustOut: false, predictedOutDate: "2026-05-28", level: "绿色" },
+          { sku: "HL-38-RED-UK", country: "英国", series: "宴会高跟鞋", owner: "Ivy", fbaDays: 96, stockoutRatio: 0.4, mustOut: false, predictedOutDate: "2026-07-05", level: "蓝色" },
+        ],
+      },
+      replenishmentModule: {
+        metricOptions: ["SKU数", "采购金额"],
+        defaultMetric: "SKU数",
+        urgencyData: {
+          SKU数: [
+            { level: "正常", value: 72, color: "#2d8b65" },
+            { level: "加急", value: 41, color: "#bf7b22" },
+            { level: "必断货", value: 24, color: "#cb5a48" },
+          ],
+          采购金额: [
+            { level: "正常", value: 126, color: "#2d8b65", suffix: "万" },
+            { level: "加急", value: 184, color: "#bf7b22", suffix: "万" },
+            { level: "必断货", value: 212, color: "#cb5a48", suffix: "万" },
+          ],
         },
-        {
-          title: "补货建议模块",
-          description: "为需采购数量、预计断货日期、建议下单日期和紧急等级保留矩阵表与条形对比区。",
-          chart: "建议图表：矩阵表 + 分组柱状图",
-          note: "重点看正常 / 加急 / 必断货三档节奏。",
+        suggestions: [
+          { sku: "RUN-42-WHT-US", site: "US", level: "必断货", requiredQty: 2800, requiredAmount: 592000, stockoutDate: "2026-04-06", orderDate: "2026-03-31" },
+          { sku: "SNE-40-GRY-CA", site: "CA", level: "必断货", requiredQty: 2200, requiredAmount: 451000, stockoutDate: "2026-04-10", orderDate: "2026-04-01" },
+          { sku: "KID-33-BLU-US", site: "US", level: "加急", requiredQty: 1680, requiredAmount: 286000, stockoutDate: "2026-04-15", orderDate: "2026-04-03" },
+          { sku: "BSK-44-BLK-DE", site: "DE", level: "加急", requiredQty: 1540, requiredAmount: 334000, stockoutDate: "2026-04-18", orderDate: "2026-04-05" },
+          { sku: "TRK-41-KHK-US", site: "US", level: "正常", requiredQty: 920, requiredAmount: 206000, stockoutDate: "2026-05-07", orderDate: "2026-04-12" },
+          { sku: "CNS-39-WHT-UK", site: "UK", level: "正常", requiredQty: 860, requiredAmount: 148000, stockoutDate: "2026-05-03", orderDate: "2026-04-11" },
+        ],
+        adoptionTrend: [
+          { period: "W10", suggestedSku: 122, adoptedSku: 74 },
+          { period: "W11", suggestedSku: 129, adoptedSku: 83 },
+          { period: "W12", suggestedSku: 136, adoptedSku: 90 },
+          { period: "W13", suggestedSku: 141, adoptedSku: 102 },
+          { period: "W14", suggestedSku: 138, adoptedSku: 97 },
+          { period: "W15", suggestedSku: 137, adoptedSku: 94 },
+        ],
+      },
+      forecastModule: {
+        dimensionOptions: ["按SKU", "按品类", "按国家"],
+        defaultDimension: "按SKU",
+        dataByDimension: {
+          按SKU: {
+            labels: ["03-01", "03-05", "03-09", "03-13", "03-17", "03-21", "03-25", "03-29", "04-02", "04-06", "04-10", "04-14"],
+            series: [
+              { name: "实际库存", color: "#0f7068", area: true, data: [428, 413, 401, 389, 374, 362, 347, 336, 324, 311, 296, 284] },
+              { name: "预测库存", color: "#4d7397", dashed: true, data: [428, 416, 404, 393, 381, 366, 352, 338, 320, 301, 282, 265] },
+              { name: "安全库存线", color: "#bf7b22", dashed: true, data: [312, 312, 312, 312, 312, 312, 312, 312, 312, 312, 312, 312] },
+            ],
+          },
+          按品类: {
+            labels: ["03-01", "03-05", "03-09", "03-13", "03-17", "03-21", "03-25", "03-29", "04-02", "04-06", "04-10", "04-14"],
+            series: [
+              { name: "实际库存", color: "#0f7068", area: true, data: [1620, 1598, 1571, 1542, 1514, 1492, 1460, 1433, 1408, 1386, 1354, 1329] },
+              { name: "预测库存", color: "#4d7397", dashed: true, data: [1620, 1604, 1580, 1558, 1532, 1504, 1473, 1446, 1416, 1385, 1351, 1318] },
+              { name: "安全库存线", color: "#bf7b22", dashed: true, data: [1360, 1360, 1360, 1360, 1360, 1360, 1360, 1360, 1360, 1360, 1360, 1360] },
+            ],
+          },
+          按国家: {
+            labels: ["03-01", "03-05", "03-09", "03-13", "03-17", "03-21", "03-25", "03-29", "04-02", "04-06", "04-10", "04-14"],
+            series: [
+              { name: "实际库存", color: "#0f7068", area: true, data: [960, 948, 935, 924, 913, 902, 888, 873, 861, 848, 836, 824] },
+              { name: "预测库存", color: "#4d7397", dashed: true, data: [960, 952, 941, 928, 918, 904, 892, 878, 860, 846, 832, 815] },
+              { name: "安全库存线", color: "#bf7b22", dashed: true, data: [830, 830, 830, 830, 830, 830, 830, 830, 830, 830, 830, 830] },
+            ],
+          },
         },
-        {
-          title: "销量预测与库存水位预测图",
-          description: "这里保留实际库存、预测库存和安全库存线的主图位置，后续适合叠加三条曲线。",
-          chart: "建议图表：多折线图",
-          note: "重点看未来缺货日期与连续补货策略。",
+      },
+      discrepancyModule: {
+        rows: [
+          { shipmentNo: "FBA-US-240321-01", carrier: "Apex物流", shippedQty: 2860, receivedQty: 2712, agingDays: 12 },
+          { shipmentNo: "FBA-CA-240323-02", carrier: "NordCargo", shippedQty: 2140, receivedQty: 2034, agingDays: 10 },
+          { shipmentNo: "FBA-UK-240325-03", carrier: "Apex物流", shippedQty: 1960, receivedQty: 1838, agingDays: 13 },
+          { shipmentNo: "FBA-DE-240326-04", carrier: "SkyBridge", shippedQty: 1750, receivedQty: 1718, agingDays: 8 },
+          { shipmentNo: "FBA-US-240328-05", carrier: "NordCargo", shippedQty: 2410, receivedQty: 2295, agingDays: 15 },
+          { shipmentNo: "FBA-IT-240329-06", carrier: "SkyBridge", shippedQty: 1680, receivedQty: 1655, agingDays: 9 },
+        ],
+        overdueShipments: [
+          { shipmentNo: "FBA-US-240311-88", site: "US", carrier: "Apex物流", waitingDays: 23, deadline: "2026-04-02" },
+          { shipmentNo: "FBA-UK-240312-41", site: "UK", carrier: "NordCargo", waitingDays: 21, deadline: "2026-04-03" },
+          { shipmentNo: "FBA-DE-240314-52", site: "DE", carrier: "SkyBridge", waitingDays: 20, deadline: "2026-04-05" },
+        ],
+        rootCauseOptions: ["物流商", "发货仓", "品类"],
+        defaultRootCause: "物流商",
+        rootCauseData: {
+          物流商: [
+            { name: "Apex物流", diffRate: 6.8 },
+            { name: "NordCargo", diffRate: 5.7 },
+            { name: "SkyBridge", diffRate: 3.2 },
+          ],
+          发货仓: [
+            { name: "华东鞋靴仓", diffRate: 6.1 },
+            { name: "华南鞋靴仓", diffRate: 5.4 },
+            { name: "华北鞋靴仓", diffRate: 4.3 },
+          ],
+          品类: [
+            { name: "跑步鞋", diffRate: 6.4 },
+            { name: "高跟鞋", diffRate: 5.9 },
+            { name: "童鞋", diffRate: 4.1 },
+          ],
         },
-        {
-          title: "收发差异看板",
-          description: "先固定差异明细表、超期未上架预警和差异根因分析三块的位置关系。",
-          chart: "建议图表：主表 + 老化条形图 + 根因条形图",
-          note: "重点看物流商、仓库、品类差异。",
+      },
+      claimModule: {
+        statusCards: [
+          { status: "待调查", count: 17, amount: 286000, tone: "warning" },
+          { status: "已开Case", count: 29, amount: 508000, tone: "neutral" },
+          { status: "索赔成功", count: 42, amount: 814000, tone: "positive" },
+          { status: "已驳回", count: 11, amount: 133000, tone: "negative" },
+        ],
+        recoveredSummary: {
+          recoveredAmount: 814000,
+          targetAmount: 1280000,
         },
-        {
-          title: "索赔状态追踪",
-          description: "保留待调查、已开 Case、索赔成功、已驳回等状态的闭环展示区，便于后续补流程图。",
-          chart: "建议图表：漏斗图 / 状态看板",
-          note: "重点看索赔处理阶段与金额挽回统计。",
-        },
-      ],
+        monthlyRecovered: [
+          { month: "01月", amount: 96 },
+          { month: "02月", amount: 114 },
+          { month: "03月", amount: 138 },
+          { month: "04月", amount: 152 },
+          { month: "05月", amount: 164 },
+          { month: "06月", amount: 150 },
+        ],
+        cases: [
+          { caseNo: "C-2403-1021", shipmentNo: "FBA-US-240321-01", status: "待调查", amount: 38200, owner: "Nina", updatedAt: "2026-03-28" },
+          { caseNo: "C-2403-1027", shipmentNo: "FBA-CA-240323-02", status: "已开Case", amount: 29600, owner: "Liam", updatedAt: "2026-03-27" },
+          { caseNo: "C-2403-1036", shipmentNo: "FBA-UK-240325-03", status: "索赔成功", amount: 41200, owner: "Ivy", updatedAt: "2026-03-27" },
+          { caseNo: "C-2403-1039", shipmentNo: "FBA-US-240328-05", status: "已驳回", amount: 16800, owner: "Amy", updatedAt: "2026-03-26" },
+          { caseNo: "C-2403-1048", shipmentNo: "FBA-DE-240326-04", status: "索赔成功", amount: 35800, owner: "Sean", updatedAt: "2026-03-26" },
+        ],
+      },
     },
     layer4: {
-      badge: "第四层 · 面向数据分析员 / 供应链专家",
       title: "问题诊断与参数模拟看板",
-      summary: "本层用于做根因定位、参数模拟和策略试验。由于当前只有需求文档依据，本轮先保留模块骨架，不预设图表细节。",
-      tags: ["问题诊断", "参数模拟", "后续强化交互"],
       filters: [
-        { label: "时间范围", value: "近 90 天" },
-        { label: "国家 / 站点", value: "全站点" },
-        { label: "仓库 / 物流商", value: "待后续接入" },
+        { label: "国家 / 站点", value: "US / CA / UK / DE" },
+        { label: "品类", value: "鞋类全品类" },
+        { label: "物流商", value: "全部物流商" },
+        { label: "运输方式", value: "海运 + 空运" },
+        { label: "服务水平", value: "95%" },
+        { label: "时间区间", value: "近 90 天" },
       ],
-      modules: [
-        {
-          title: "SKU 周转矩阵",
-          description: "预留畅销缺货、畅销安全、滞销积压、滞销安全四类问题 SKU 的分析区域。",
-          chart: "图表方案：本轮仅保留占位",
-          note: "后续再补四象限图与问题聚类规则。",
+      skuTurnoverMatrix: {
+        xLabel: "销量指数（高 -> 低）",
+        yLabel: "库存指数（低 -> 高）",
+        points: [
+          { sku: "RUN-42-WHT", x: 84, y: 26, qty: 820, quadrant: "畅销缺货" },
+          { sku: "SNE-40-GRY", x: 79, y: 34, qty: 760, quadrant: "畅销缺货" },
+          { sku: "BSK-44-BLK", x: 75, y: 41, qty: 1030, quadrant: "畅销安全" },
+          { sku: "KID-33-BLU", x: 71, y: 38, qty: 920, quadrant: "畅销安全" },
+          { sku: "TRK-41-KHK", x: 68, y: 58, qty: 1240, quadrant: "畅销安全" },
+          { sku: "CNS-39-WHT", x: 63, y: 64, qty: 1360, quadrant: "滞销积压" },
+          { sku: "HL-38-RED", x: 28, y: 78, qty: 980, quadrant: "滞销积压" },
+          { sku: "BT-42-BRN", x: 24, y: 82, qty: 1120, quadrant: "滞销积压" },
+          { sku: "LF-39-WHT", x: 33, y: 74, qty: 860, quadrant: "滞销积压" },
+          { sku: "SLP-40-NVY", x: 42, y: 49, qty: 620, quadrant: "滞销安全" },
+          { sku: "CLS-41-BLK", x: 46, y: 45, qty: 640, quadrant: "滞销安全" },
+          { sku: "SND-38-BGE", x: 39, y: 36, qty: 510, quadrant: "滞销安全" },
+        ],
+      },
+      safetySimulation: {
+        defaults: {
+          z: 1.65,
+          sigmaD: 26,
+          leadTime: 18,
+          avgDailyDemand: 118,
+          onHand: 2380,
+          inTransit: 760,
+          reviewDays: 14,
         },
-        {
-          title: "安全库存模型模拟",
-          description: "预留服务系数、需求偏差和提前期参数的模拟面板位置。",
-          chart: "图表方案：本轮仅保留占位",
-          note: "后续再补滑块、模拟结果和 What-If 交互。",
+        ranges: {
+          z: { min: 1.0, max: 2.6, step: 0.05 },
+          sigmaD: { min: 10, max: 60, step: 1 },
+          leadTime: { min: 7, max: 45, step: 1 },
         },
-        {
-          title: "提前期敏感性分析",
-          description: "预留不同物流商、运输方式和政策变化对库存水平影响的展示区。",
-          chart: "图表方案：本轮仅保留占位",
-          note: "后续再补敏感性曲线和对比视图。",
+      },
+      leadTimeSensitivity: {
+        modeOptions: ["物流商", "运输方式", "关税政策"],
+        defaultMode: "物流商",
+        dataByMode: {
+          物流商: {
+            labels: ["Apex物流", "NordCargo", "SkyBridge", "BlueLane"],
+            series: [
+              { name: "库存水平指数", color: "#0f7068", data: [78, 84, 71, 88] },
+              { name: "缺货风险%", color: "#cb5a48", data: [5.2, 7.1, 4.5, 8.4] },
+            ],
+          },
+          运输方式: {
+            labels: ["海运快线", "海运普线", "空运", "铁运"],
+            series: [
+              { name: "库存水平指数", color: "#0f7068", data: [76, 88, 64, 72] },
+              { name: "缺货风险%", color: "#cb5a48", data: [4.8, 8.9, 3.6, 5.4] },
+            ],
+          },
+          关税政策: {
+            labels: ["基准税率", "+5%税率", "+10%税率", "豁免政策"],
+            series: [
+              { name: "库存水平指数", color: "#0f7068", data: [79, 86, 91, 73] },
+              { name: "缺货风险%", color: "#cb5a48", data: [5.1, 6.4, 7.9, 4.3] },
+            ],
+          },
         },
-        {
-          title: "全链路库存分布",
-          description: "预留供应商生产中、国内仓、在途、清关、待上架、FBA 可售等全链路库存分布位置。",
-          chart: "图表方案：本轮仅保留占位",
-          note: "后续再补漏斗或分段流转视图。",
-        },
-        {
-          title: "交期与时效偏差分析",
-          description: "预留供应商延期、头程延误和差异趋势预警的组合分析区。",
-          chart: "图表方案：本轮仅保留占位",
-          note: "后续再补偏差趋势图与预警规则展示。",
-        },
-      ],
+      },
+      chainDistribution: {
+        stages: [
+          { stage: "供应商生产中", qty: 14860, amountWan: 382 },
+          { stage: "国内仓", qty: 12420, amountWan: 329 },
+          { stage: "海上/空中在途", qty: 10180, amountWan: 282 },
+          { stage: "目的港清关", qty: 8240, amountWan: 236 },
+          { stage: "FBA待上架", qty: 6430, amountWan: 194 },
+          { stage: "FBA可售", qty: 5280, amountWan: 168 },
+        ],
+      },
+      deliveryDeviation: {
+        supplierOverdueAvg: 6.8,
+        headhaulDelayAvg: 4.3,
+        bufferDays: 12,
+        trendLabels: ["01月", "02月", "03月", "04月", "05月", "06月"],
+        trendSeries: [
+          { name: "Apex物流差异率", color: "#0f7068", data: [4.6, 5.1, 5.4, 6.2, 6.9, 7.3] },
+          { name: "NordCargo差异率", color: "#bf7b22", data: [3.9, 4.2, 4.6, 4.8, 5.0, 5.2] },
+          { name: "SkyBridge差异率", color: "#4d7397", data: [3.1, 3.0, 3.4, 3.5, 3.6, 3.8] },
+        ],
+        providerStats: [
+          { provider: "Apex物流", promiseDays: 14, actualDays: 18, diffRate: 7.3, trend: "连续上升", alert: true },
+          { provider: "NordCargo", promiseDays: 16, actualDays: 18, diffRate: 5.2, trend: "轻微上升", alert: false },
+          { provider: "SkyBridge", promiseDays: 13, actualDays: 15, diffRate: 3.8, trend: "稳定", alert: false },
+          { provider: "BlueLane", promiseDays: 15, actualDays: 19, diffRate: 6.6, trend: "连续上升", alert: true },
+        ],
+      },
     },
   },
 };

@@ -1,632 +1,238 @@
 (function () {
-  const SVG_NS = "http://www.w3.org/2000/svg";
-
-  function createSvgElement(tag, attrs) {
-    const node = document.createElementNS(SVG_NS, tag);
-    Object.entries(attrs || {}).forEach(([key, value]) => {
-      node.setAttribute(key, String(value));
-    });
-    return node;
-  }
-
-  function buildLinePath(points) {
-    return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
-  }
-
-  function buildAreaPath(points, baseline) {
-    const line = buildLinePath(points);
-    const first = points[0];
-    const last = points[points.length - 1];
-    return `${line} L ${last.x} ${baseline} L ${first.x} ${baseline} Z`;
-  }
-
-  function formatAmount(value) {
-    return `¥${(value / 10000).toFixed(1)}万`;
-  }
-
-  function formatNumber(value) {
-    return value.toLocaleString("zh-CN");
-  }
-
-  function formatWan(value) {
-    if (Number.isInteger(value) && value >= 1000) return `${value}万`;
-    if (value >= 100) return `${value.toFixed(1).replace(/\.0$/, "")}万`;
-    return `${value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")}万`;
+  function formatAmount(v) { return "\u00a5" + (v / 10000).toFixed(1) + "\u4e07"; }
+  function formatNumber(v) { return Number(v).toLocaleString("zh-CN"); }
+  function formatWan(v) {
+    if (Number.isInteger(v) && v >= 1000) return v + "\u4e07";
+    if (v >= 100) return v.toFixed(1).replace(/\.0$/, "") + "\u4e07";
+    return v.toFixed(2).replace(/0+$/, "").replace(/\.$/, "") + "\u4e07";
   }
 
   function renderSegmentSwitch(target, options, activeValue, onChange) {
     if (!target) return;
-    target.innerHTML = options
-      .map(
-        (option) => `
-          <button class="seg-btn${option === activeValue ? " is-active" : ""}" type="button" data-seg-value="${option}">
-            ${option}
-          </button>
-        `
-      )
-      .join("");
-
-    target.querySelectorAll("[data-seg-value]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const value = button.getAttribute("data-seg-value");
-        if (!value || value === activeValue) return;
-        onChange(value);
+    target.innerHTML = options.map(function (o) {
+      return '<button class="seg-btn' + (o === activeValue ? " is-active" : "") +
+        '" type="button" data-seg-value="' + o + '">' + o + "</button>";
+    }).join("");
+    target.querySelectorAll("[data-seg-value]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var v = btn.getAttribute("data-seg-value");
+        if (v && v !== activeValue) onChange(v);
       });
     });
   }
 
   function renderAbcBars(target, items) {
     if (!target) return;
-    target.innerHTML = `
-      <div class="abc-bar-list">
-        ${items
-          .map(
-            (item) => `
-              <div class="abc-bar-row" style="--abc-color:${item.color}">
-                <span class="abc-bar-label">${item.tier}</span>
-                <div class="abc-bar-track"><span style="width:${item.value}%"></span></div>
-                <span class="abc-bar-value">${item.value}%</span>
-              </div>
-            `
-          )
-          .join("")}
-      </div>
-    `;
+    var sorted = items.slice().sort(function (a, b) { return b.value - a.value; });
+    target.innerHTML = '<div class="abc-bar-list">' + sorted.map(function (item) {
+      return '<div class="abc-bar-row"><span class="abc-bar-label">' + (item.tier || item.label) +
+        '</span><div class="abc-bar-track"><span class="abc-bar-fill" style="width:' + item.value +
+        '%"></span><span class="abc-bar-value' + (item.value < 11 ? " is-outside" : "") +
+        '" style="left:' + item.value + '%">' + (Number.isInteger(item.value) ? item.value : item.value.toFixed(1)) +
+        '%</span></div></div>';
+    }).join("") + "</div>";
   }
 
-  function renderDonut(target, items, centerTitle) {
+  function renderEChartsPie(target, items, title) {
     if (!target) return;
-
-    const size = 220;
-    const center = size / 2;
-    const radius = 70;
-    const strokeWidth = 24;
-    const circumference = 2 * Math.PI * radius;
-    let offset = 0;
-
-    const svg = createSvgElement("svg", {
-      viewBox: `0 0 ${size} ${size}`,
-      class: "abc-donut-svg",
-      role: "img",
-      "aria-label": `${centerTitle}占比环图`,
+    target.innerHTML = '<div class="echart-box-sm" style="min-height:240px"></div>';
+    var chart = echarts.init(target.querySelector(".echart-box-sm"));
+    chart.setOption({
+      tooltip: { trigger: "item", formatter: "{b}: {c}%" },
+      legend: { bottom: 0, textStyle: { fontSize: 11 } },
+      series: [{
+        type: "pie", radius: ["42%", "68%"], center: ["50%", "42%"],
+        label: { formatter: "{b}\n{c}%", fontSize: 11 },
+        data: items.map(function (item) {
+          return { name: item.tier || item.label, value: item.value, itemStyle: { color: item.color } };
+        }),
+      }],
     });
-
-    svg.appendChild(
-      createSvgElement("circle", {
-        cx: center,
-        cy: center,
-        r: radius,
-        fill: "none",
-        stroke: "rgba(23,48,49,0.08)",
-        "stroke-width": strokeWidth,
-      })
-    );
-
-    items.forEach((item) => {
-      const length = (item.value / 100) * circumference;
-      const segment = createSvgElement("circle", {
-        cx: center,
-        cy: center,
-        r: radius,
-        fill: "none",
-        stroke: item.color,
-        "stroke-width": strokeWidth,
-        "stroke-linecap": "butt",
-        "stroke-dasharray": `${length} ${circumference - length}`,
-        "stroke-dashoffset": `${-offset}`,
-        transform: `rotate(-90 ${center} ${center})`,
-      });
-      svg.appendChild(segment);
-      offset += length;
-    });
-
-    const title = createSvgElement("text", {
-      x: "50%",
-      y: "48%",
-      "text-anchor": "middle",
-      "font-size": "22",
-      "font-weight": "800",
-      fill: "#173031",
-    });
-    title.textContent = centerTitle;
-    svg.appendChild(title);
-
-    const note = createSvgElement("text", {
-      x: "50%",
-      y: "60%",
-      "text-anchor": "middle",
-      "font-size": "11",
-      fill: "#5f7477",
-    });
-    note.textContent = "结构占比";
-    svg.appendChild(note);
-
-    target.innerHTML = "";
-    target.appendChild(svg);
-
-    const legend = document.createElement("div");
-    legend.className = "abc-legend";
-    legend.innerHTML = items
-      .map(
-        (item) => `
-          <div class="abc-legend-item">
-            <span class="abc-legend-dot" style="background:${item.color}"></span>
-            <span>${item.tier || item.label}</span>
-            <strong>${item.value}%</strong>
-          </div>
-        `
-      )
-      .join("");
-    target.appendChild(legend);
+    window.addEventListener("resize", function () { chart.resize(); });
   }
 
   function renderTurnoverList(target, items, mode) {
     if (!target) return;
-
-    const allDays = items.map((item) => item.turnoverDays);
-    const maxDays = Math.max(...allDays);
-    const minDays = Math.min(...allDays);
-    const span = maxDays - minDays || 1;
-
-    target.innerHTML = items
-      .map((item) => {
-        const width =
-          mode === "fast"
-            ? ((maxDays - item.turnoverDays + 8) / (span + 8)) * 100
-            : (item.turnoverDays / maxDays) * 100;
-        const barColor = mode === "fast" ? "#0f7068" : "#cb5a48";
-
-        return `
-          <div class="turnover-item">
-            <div class="turnover-item__top">
-              <strong>${item.parent}</strong>
-              <span>${item.turnoverDays} 天</span>
-            </div>
-            <div class="turnover-bar"><span style="width:${width}%; background:${barColor}"></span></div>
-            <p class="turnover-meta">
-              日均销量 ${formatNumber(item.dailySales)} | 库存 ${formatNumber(item.stockQty)} 双 | 库存金额 ${formatAmount(item.stockAmount)}
-            </p>
-          </div>
-        `;
-      })
-      .join("");
+    var allDays = items.map(function (i) { return i.turnoverDays; });
+    var maxDays = Math.max.apply(null, allDays);
+    var minDays = Math.min.apply(null, allDays);
+    var span = maxDays - minDays || 1;
+    target.innerHTML = items.map(function (item) {
+      var width = mode === "fast"
+        ? ((maxDays - item.turnoverDays + 8) / (span + 8)) * 100
+        : (item.turnoverDays / maxDays) * 100;
+      var barColor = mode === "fast" ? "#2a9d8f" : "#e63946";
+      return '<div class="turnover-item"><div class="turnover-item__top"><strong>' + item.parent +
+        '</strong><span>' + item.turnoverDays + ' \u5929</span></div>' +
+        '<div class="turnover-bar"><span style="width:' + width + '%;background:' + barColor + '"></span></div>' +
+        '<p class="turnover-meta">\u65e5\u5747\u9500\u91cf ' + formatNumber(item.dailySales) +
+        ' | \u5e93\u5b58 ' + formatNumber(item.stockQty) + ' \u53cc | \u5e93\u5b58\u91d1\u989d ' +
+        formatAmount(item.stockAmount) + '</p></div>';
+    }).join("");
   }
 
   function renderGroupedBarChart(target, labels, inventorySeries, salesSeries) {
     if (!target) return;
-
-    const width = 760;
-    const height = 300;
-    const margin = { top: 20, right: 18, bottom: 46, left: 48 };
-    const maxValue = Math.max(...inventorySeries, ...salesSeries);
-    const innerWidth = width - margin.left - margin.right;
-    const innerHeight = height - margin.top - margin.bottom;
-    const groupWidth = innerWidth / labels.length;
-    const barWidth = Math.min(18, groupWidth / 3);
-
-    const svg = createSvgElement("svg", {
-      viewBox: `0 0 ${width} ${height}`,
-      role: "img",
-      "aria-label": "库存结构对比双轴柱状图",
+    target.innerHTML = '<div class="echart-box"></div>';
+    var chart = echarts.init(target.querySelector(".echart-box"));
+    chart.setOption({
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+      legend: { data: ["\u5e93\u5b58\u91cf", "\u9500\u91cf"], bottom: 0, textStyle: { fontSize: 11 } },
+      grid: { left: 46, right: 16, top: 16, bottom: 40 },
+      xAxis: { type: "category", data: labels, axisLabel: { fontSize: 11 } },
+      yAxis: { type: "value", axisLabel: { fontSize: 11 }, splitLine: { lineStyle: { color: "#f0f0f0" } } },
+      series: [
+        { name: "\u5e93\u5b58\u91cf", type: "bar", data: inventorySeries, itemStyle: { color: "#457b9d" }, barGap: "20%" },
+        { name: "\u9500\u91cf", type: "bar", data: salesSeries, itemStyle: { color: "#2a9d8f" } },
+      ],
     });
-
-    for (let i = 0; i <= 4; i += 1) {
-      const ratio = i / 4;
-      const y = margin.top + ratio * innerHeight;
-      svg.appendChild(
-        createSvgElement("line", { x1: margin.left, y1: y, x2: width - margin.right, y2: y, class: "chart-grid-line" })
-      );
-      const valueText = createSvgElement("text", {
-        x: margin.left - 10,
-        y: y + 4,
-        "text-anchor": "end",
-        class: "chart-axis-label",
-      });
-      valueText.textContent = String(Math.round(maxValue - maxValue * ratio));
-      svg.appendChild(valueText);
-    }
-
-    labels.forEach((label, index) => {
-      const groupX = margin.left + index * groupWidth + groupWidth / 2;
-      const inv = inventorySeries[index];
-      const sales = salesSeries[index];
-      const invHeight = (inv / maxValue) * innerHeight;
-      const salesHeight = (sales / maxValue) * innerHeight;
-
-      const invBar = createSvgElement("rect", {
-        x: groupX - barWidth - 3,
-        y: margin.top + innerHeight - invHeight,
-        width: barWidth,
-        height: invHeight,
-        rx: 6,
-        fill: "#0f7068",
-      });
-      const salesBar = createSvgElement("rect", {
-        x: groupX + 3,
-        y: margin.top + innerHeight - salesHeight,
-        width: barWidth,
-        height: salesHeight,
-        rx: 6,
-        fill: "#4d7397",
-      });
-
-      svg.append(invBar, salesBar);
-
-      const axis = createSvgElement("text", {
-        x: groupX,
-        y: height - 14,
-        "text-anchor": "middle",
-        class: "chart-axis-label",
-      });
-      axis.textContent = label;
-      svg.appendChild(axis);
-    });
-
-    target.innerHTML = "";
-    const wrap = document.createElement("div");
-    wrap.className = "chart-wrap";
-    wrap.appendChild(svg);
-
-    const legend = document.createElement("div");
-    legend.className = "chart-legend";
-    legend.innerHTML = `
-      <span class="legend-item"><span class="legend-swatch" style="background:#0f7068"></span>库存量（受仓别切换影响）</span>
-      <span class="legend-item"><span class="legend-swatch" style="background:#4d7397"></span>销量（口径固定）</span>
-    `;
-    target.append(wrap, legend);
+    window.addEventListener("resize", function () { chart.resize(); });
   }
 
   function renderAgingDistributionChart(target, points) {
-    if (!target || !Array.isArray(points) || points.length === 0) return;
-
-    const width = 780;
-    const height = 300;
-    const margin = { top: 26, right: 18, bottom: 56, left: 58 };
-    const values = points.map((item) => item.amountWan);
-    const max = Math.max(...values);
-    const min = 0;
-    const span = max - min || 1;
-    const xStep = (width - margin.left - margin.right) / (points.length - 1 || 1);
-
-    const scaled = points.map((item, index) => ({
-      ...item,
-      x: margin.left + index * xStep,
-      y: margin.top + ((max - item.amountWan) / span) * (height - margin.top - margin.bottom),
-    }));
-
-    const svg = createSvgElement("svg", {
-      viewBox: `0 0 ${width} ${height}`,
-      role: "img",
-      "aria-label": "库龄分段面积图",
-      class: "aging-dist-svg",
+    if (!target || !Array.isArray(points)) return;
+    target.innerHTML = '<div class="echart-box"></div>';
+    var chart = echarts.init(target.querySelector(".echart-box"));
+    chart.setOption({
+      tooltip: { trigger: "axis" },
+      grid: { left: 56, right: 16, top: 16, bottom: 50 },
+      xAxis: { type: "category", data: points.map(function (p) { return p.label; }),
+        axisLabel: { fontSize: 10, rotate: 20 } },
+      yAxis: { type: "value", axisLabel: { fontSize: 10, formatter: function (v) { return formatWan(v); } },
+        splitLine: { lineStyle: { color: "#f0f0f0" } } },
+      series: [{
+        type: "line", data: points.map(function (p) { return p.amountWan; }),
+        smooth: true, symbol: "circle", symbolSize: 6,
+        lineStyle: { color: "#457b9d", width: 2.5 },
+        itemStyle: { color: "#457b9d" },
+        areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: "rgba(69,123,157,0.3)" },
+          { offset: 1, color: "rgba(69,123,157,0.02)" },
+        ]) },
+        label: { show: true, position: "top", fontSize: 10,
+          formatter: function (p) { return formatWan(p.value); } },
+      }],
     });
-
-    for (let i = 0; i <= 4; i += 1) {
-      const ratio = i / 4;
-      const y = margin.top + ratio * (height - margin.top - margin.bottom);
-      const value = max - (max - min) * ratio;
-
-      svg.appendChild(
-        createSvgElement("line", { x1: margin.left, y1: y, x2: width - margin.right, y2: y, class: "chart-grid-line" })
-      );
-
-      const axisLabel = createSvgElement("text", {
-        x: margin.left - 10,
-        y: y + 4,
-        "text-anchor": "end",
-        class: "chart-axis-label",
-      });
-      axisLabel.textContent = formatWan(value);
-      svg.appendChild(axisLabel);
-    }
-
-    svg.appendChild(
-      createSvgElement("path", {
-        d: buildAreaPath(scaled, height - margin.bottom),
-        class: "aging-dist-area",
-      })
-    );
-    svg.appendChild(
-      createSvgElement("path", {
-        d: buildLinePath(scaled),
-        class: "aging-dist-line",
-      })
-    );
-
-    scaled.forEach((point) => {
-      svg.appendChild(createSvgElement("circle", { cx: point.x, cy: point.y, r: 4.2, class: "aging-dist-point" }));
-
-      const valueLabel = createSvgElement("text", {
-        x: point.x,
-        y: point.y - 10,
-        "text-anchor": "middle",
-        class: "aging-dist-value",
-      });
-      valueLabel.textContent = formatWan(point.amountWan);
-      svg.appendChild(valueLabel);
-
-      const axisLabel = createSvgElement("text", {
-        x: point.x,
-        y: height - 14,
-        "text-anchor": "middle",
-        class: "chart-axis-label",
-      });
-      axisLabel.textContent = point.label;
-      svg.appendChild(axisLabel);
-    });
-
-    target.innerHTML = "";
-    const wrap = document.createElement("div");
-    wrap.className = "chart-wrap";
-    wrap.appendChild(svg);
-    target.appendChild(wrap);
+    window.addEventListener("resize", function () { chart.resize(); });
   }
 
   function renderStorageFeeWarning(section) {
-    const summary = document.querySelector(".js-fee-summary");
-    const bands = document.querySelector(".js-fee-bands");
-    const riskList = document.querySelector(".js-fee-risk-skus");
+    var summary = document.querySelector(".js-fee-summary");
+    var bands = document.querySelector(".js-fee-bands");
+    var riskList = document.querySelector(".js-fee-risk-skus");
     if (!summary || !bands || !riskList) return;
-
-    summary.innerHTML = `
-      <article class="fee-card">
-        <p>即将产生 LTSF 的 SKU</p>
-        <strong>${formatNumber(section.ltsfSkuCount)} 个</strong>
-      </article>
-      <article class="fee-card">
-        <p>长期仓储费（预估）</p>
-        <strong>${formatAmount(section.estimatedLtsf)}</strong>
-      </article>
-      <article class="fee-card">
-        <p>超龄附加费（预估）</p>
-        <strong>${formatAmount(section.estimatedAgedFee)}</strong>
-      </article>
-      <article class="fee-card fee-card--focus">
-        <p>${section.month}预计扣费总额</p>
-        <strong>${formatAmount(section.estimatedTotal)}</strong>
-      </article>
-    `;
-
-    bands.innerHTML = `
-      <div class="fee-table-head">
-        <span>库龄区间</span>
-        <span>SKU数</span>
-        <span>体积</span>
-        <span>费率</span>
-        <span>预估费用</span>
-      </div>
-      ${section.bands
-        .map(
-          (band) => `
-            <div class="fee-table-row">
-              <span>${band.range}</span>
-              <span>${formatNumber(band.skuCount)}</span>
-              <span>${band.volume}</span>
-              <span>${band.rate}</span>
-              <strong>${formatAmount(band.fee)}</strong>
-            </div>
-          `
-        )
-        .join("")}
-    `;
-
-    const maxFee = Math.max(...section.topRiskSkus.map((item) => item.fee));
-    riskList.innerHTML = section.topRiskSkus
-      .map((item) => {
-        const width = (item.fee / maxFee) * 100;
-        return `
-          <div class="fee-risk-row">
-            <div class="fee-risk-row__top">
-              <strong>${item.sku}</strong>
-              <span>${item.warehouse} · ${item.age}</span>
-            </div>
-            <div class="fee-risk-row__bar"><span style="width:${width}%"></span></div>
-            <div class="fee-risk-row__value">${formatAmount(item.fee)}</div>
-          </div>
-        `;
-      })
-      .join("");
+    summary.innerHTML =
+      '<article class="fee-card"><p>\u5373\u5c06\u4ea7\u751f LTSF \u7684 SKU</p><strong>' + formatNumber(section.ltsfSkuCount) + ' \u4e2a</strong></article>' +
+      '<article class="fee-card"><p>\u957f\u671f\u4ed3\u50a8\u8d39\uff08\u9884\u4f30\uff09</p><strong>' + formatAmount(section.estimatedLtsf) + '</strong></article>' +
+      '<article class="fee-card"><p>\u8d85\u9f84\u9644\u52a0\u8d39\uff08\u9884\u4f30\uff09</p><strong>' + formatAmount(section.estimatedAgedFee) + '</strong></article>' +
+      '<article class="fee-card fee-card--focus"><p>' + section.month + '\u9884\u8ba1\u6263\u8d39\u603b\u989d</p><strong>' + formatAmount(section.estimatedTotal) + '</strong></article>';
+    bands.innerHTML =
+      '<div class="fee-table-head"><span>\u5e93\u9f84\u533a\u95f4</span><span>SKU\u6570</span><span>\u4f53\u79ef</span><span>\u8d39\u7387</span><span>\u9884\u4f30\u8d39\u7528</span></div>' +
+      section.bands.map(function (b) {
+        return '<div class="fee-table-row"><span>' + b.range + '</span><span>' + formatNumber(b.skuCount) +
+          '</span><span>' + b.volume + '</span><span>' + b.rate + '</span><strong>' + formatAmount(b.fee) + '</strong></div>';
+      }).join("");
+    var maxFee = Math.max.apply(null, section.topRiskSkus.map(function (i) { return i.fee; }));
+    riskList.innerHTML = section.topRiskSkus.map(function (item) {
+      var w = (item.fee / maxFee) * 100;
+      return '<div class="fee-risk-row"><div class="fee-risk-row__top"><strong>' + item.sku +
+        '</strong><span>' + item.warehouse + ' \u00b7 ' + item.age + '</span></div>' +
+        '<div class="fee-risk-row__bar"><span style="width:' + w + '%"></span></div>' +
+        '<div class="fee-risk-row__value">' + formatAmount(item.fee) + '</div></div>';
+    }).join("");
   }
 
   function renderUnsellablePool(section) {
-    const summary = document.querySelector(".js-unsellable-summary");
-    const reasons = document.querySelector(".js-unsellable-reasons");
-    const deadlines = document.querySelector(".js-unsellable-deadlines");
+    var summary = document.querySelector(".js-unsellable-summary");
+    var reasons = document.querySelector(".js-unsellable-reasons");
+    var deadlines = document.querySelector(".js-unsellable-deadlines");
     if (!summary || !reasons || !deadlines) return;
-
-    summary.innerHTML = `
-      <article class="unsellable-total-card">
-        <p>不可售库存数量</p>
-        <strong>${formatNumber(section.totalQty)} 双</strong>
-      </article>
-      <article class="unsellable-total-card">
-        <p>不可售库存金额</p>
-        <strong>${formatAmount(section.totalAmount)}</strong>
-      </article>
-    `;
-
-    reasons.innerHTML = section.reasons
-      .map(
-        (item) => `
-          <div class="unsellable-reason-item">
-            <div class="unsellable-reason-item__top">
-              <strong>${item.reason}</strong>
-              <span>${item.share}%</span>
-            </div>
-            <div class="unsellable-reason-track"><span style="width:${item.share}%; background:${item.color}"></span></div>
-            <p>数量 ${formatNumber(item.qty)} 双 · 金额 ${formatAmount(item.amount)}</p>
-          </div>
-        `
-      )
-      .join("");
-
-    deadlines.innerHTML = section.deadlines
-      .map(
-        (item) => `
-          <div class="deadline-row">
-            <div class="deadline-row__main">
-              <strong>${item.sku}</strong>
-              <span>${item.reason} · ${item.action}</span>
-            </div>
-            <div class="deadline-row__meta">
-              <span>${item.deadline}</span>
-              <span class="delta-chip ${item.daysLeft <= 14 ? "tone-negative" : "tone-warning"}">剩余 ${item.daysLeft} 天</span>
-            </div>
-          </div>
-        `
-      )
-      .join("");
+    summary.innerHTML =
+      '<article class="unsellable-total-card"><p>\u4e0d\u53ef\u552e\u5e93\u5b58\u6570\u91cf</p><strong>' + formatNumber(section.totalQty) + ' \u53cc</strong></article>' +
+      '<article class="unsellable-total-card"><p>\u4e0d\u53ef\u552e\u5e93\u5b58\u91d1\u989d</p><strong>' + formatAmount(section.totalAmount) + '</strong></article>';
+    reasons.innerHTML = section.reasons.map(function (item) {
+      return '<div class="unsellable-reason-item"><div class="unsellable-reason-item__top"><strong>' + item.reason +
+        '</strong><span>' + item.share + '%</span></div>' +
+        '<div class="unsellable-reason-track"><span style="width:' + item.share + '%;background:' + item.color + '"></span></div>' +
+        '<p>\u6570\u91cf ' + formatNumber(item.qty) + ' \u53cc \u00b7 \u91d1\u989d ' + formatAmount(item.amount) + '</p></div>';
+    }).join("");
+    deadlines.innerHTML = section.deadlines.map(function (item) {
+      return '<div class="deadline-row"><div class="deadline-row__main"><strong>' + item.sku +
+        '</strong><span>' + item.reason + ' \u00b7 ' + item.action + '</span></div>' +
+        '<div class="deadline-row__meta"><span>' + item.deadline +
+        '</span><span class="delta-chip ' + (item.daysLeft <= 14 ? "tone-negative" : "tone-warning") +
+        '">\u5269\u4f59 ' + item.daysLeft + ' \u5929</span></div></div>';
+    }).join("");
   }
 
   function renderLayer2Page(layer) {
-    const root = document.querySelector(".js-layer2-page");
+    var root = document.querySelector(".js-layer2-page");
     if (!root) return;
 
-    root.innerHTML = `
-      <article class="panel layer2-module">
-        <div class="panel-heading">
-          <div>
-            <p class="panel-kicker">模块1</p>
-            <h3>ABC分类库存分布</h3>
-          </div>
-          <div class="layer2-switch-row">
-            <div class="panel-switch js-abc-dimension-switch" aria-label="ABC分析维度切换"></div>
-            <div class="panel-switch js-abc-metric-switch" aria-label="ABC统计口径切换"></div>
-          </div>
-        </div>
-        <p class="layer2-module__note">${layer.abcDistribution.note}</p>
-        <div class="layer2-abc-grid">
-          <article class="chart-card-lite">
-            <h4>条形图</h4>
-            <div class="js-abc-bar"></div>
-          </article>
-          <article class="chart-card-lite">
-            <h4>饼图</h4>
-            <div class="abc-donut-wrap js-abc-pie"></div>
-          </article>
-        </div>
-      </article>
+    root.innerHTML =
+      '<article class="panel layer2-module">' +
+        '<div class="panel-heading"><div><p class="panel-kicker">\u6a21\u57571</p><h3>ABC\u5206\u7c7b\u5e93\u5b58\u5206\u5e03</h3></div>' +
+        '<div class="layer2-switch-row"><div class="panel-switch js-abc-dimension-switch"></div><div class="panel-switch js-abc-metric-switch"></div></div></div>' +
+        '<p class="layer2-module__note">' + layer.abcDistribution.note + '</p>' +
+        '<div class="layer2-abc-grid"><article class="chart-card-lite"><h4>\u6761\u5f62\u56fe</h4><div class="js-abc-bar"></div></article>' +
+        '<article class="chart-card-lite"><h4>\u997c\u56fe</h4><div class="abc-donut-wrap js-abc-pie"></div></article></div></article>' +
 
-      <article class="panel layer2-module">
-        <div class="panel-heading">
-          <div>
-            <p class="panel-kicker">模块2</p>
-            <h3>SKU周转速度排名（父体）</h3>
-          </div>
-          <span class="pill pill-muted">排序指标：周转天数</span>
-        </div>
-        <div class="layer2-ranking-grid">
-          <article class="chart-card-lite">
-            <h4>Top 10 高周转父体</h4>
-            <div class="turnover-list js-turnover-fast"></div>
-          </article>
-          <article class="chart-card-lite">
-            <h4>Bottom 10 低周转父体</h4>
-            <div class="turnover-list js-turnover-slow"></div>
-          </article>
-        </div>
-      </article>
+      '<article class="panel layer2-module">' +
+        '<div class="panel-heading"><div><p class="panel-kicker">\u6a21\u57572</p><h3>SKU\u5468\u8f6c\u901f\u5ea6\u6392\u540d\uff08\u7236\u4f53\uff09</h3></div>' +
+        '<span class="pill pill-muted">\u6392\u5e8f\u6307\u6807\uff1a\u5468\u8f6c\u5929\u6570</span></div>' +
+        '<div class="layer2-ranking-grid"><article class="chart-card-lite"><h4>Top 10 \u9ad8\u5468\u8f6c\u7236\u4f53</h4>' +
+        '<div class="turnover-list js-turnover-fast"></div></article>' +
+        '<article class="chart-card-lite"><h4>Bottom 10 \u4f4e\u5468\u8f6c\u7236\u4f53</h4>' +
+        '<div class="turnover-list js-turnover-slow"></div></article></div></article>' +
 
-      <article class="panel layer2-module">
-        <div class="panel-heading">
-          <div>
-            <p class="panel-kicker">模块3</p>
-            <h3>库存结构对比图（双轴柱状图）</h3>
-          </div>
-          <div class="panel-switch js-structure-scope-switch" aria-label="库存结构仓别切换"></div>
-        </div>
-        <div class="chart-stage js-structure-compare-chart"></div>
-      </article>
+      '<article class="panel layer2-module">' +
+        '<div class="panel-heading"><div><p class="panel-kicker">\u6a21\u57573</p><h3>\u5e93\u5b58\u7ed3\u6784\u5bf9\u6bd4\u56fe</h3></div>' +
+        '<div class="panel-switch js-structure-scope-switch"></div></div>' +
+        '<div class="chart-stage js-structure-compare-chart"></div></article>' +
 
-      <article class="panel layer2-module">
-        <div class="panel-heading">
-          <div>
-            <p class="panel-kicker">模块4</p>
-            <h3>库龄结构图</h3>
-          </div>
-          <div class="panel-switch js-aging-warehouse-switch" aria-label="库龄仓别切换"></div>
-        </div>
-        <div class="layer2-aging-grid">
-          <article class="chart-card-lite">
-            <h4>库龄占比（扇形图）</h4>
-            <div class="abc-donut-wrap js-aging-pie"></div>
-          </article>
-          <article class="chart-card-lite">
-            <h4>库龄分布（面积图）</h4>
-            <div class="chart-stage js-aging-area"></div>
-          </article>
-        </div>
-      </article>
+      '<article class="panel layer2-module">' +
+        '<div class="panel-heading"><div><p class="panel-kicker">\u6a21\u57574</p><h3>\u5e93\u9f84\u7ed3\u6784\u56fe</h3></div>' +
+        '<div class="panel-switch js-aging-warehouse-switch"></div></div>' +
+        '<div class="layer2-aging-grid"><article class="chart-card-lite"><h4>\u5e93\u9f84\u5360\u6bd4</h4>' +
+        '<div class="abc-donut-wrap js-aging-pie"></div></article>' +
+        '<article class="chart-card-lite"><h4>\u5e93\u9f84\u5206\u5e03</h4>' +
+        '<div class="chart-stage js-aging-area"></div></article></div></article>' +
 
-      <article class="panel layer2-module">
-        <div class="panel-heading">
-          <div>
-            <p class="panel-kicker">模块5</p>
-            <h3>超期仓储费预警</h3>
-          </div>
-          <span class="pill pill-danger">181-365天 / 365天以上</span>
-        </div>
-        <div class="fee-summary-grid js-fee-summary"></div>
-        <div class="fee-table js-fee-bands"></div>
-        <article class="chart-card-lite">
-          <h4>高风险 SKU 预估扣费</h4>
-          <div class="fee-risk-list js-fee-risk-skus"></div>
-        </article>
-      </article>
+      '<article class="panel layer2-module">' +
+        '<div class="panel-heading"><div><p class="panel-kicker">\u6a21\u57575</p><h3>\u8d85\u671f\u4ed3\u50a8\u8d39\u9884\u8b66</h3></div>' +
+        '<span class="pill pill-danger">181-365\u5929 / 365\u5929\u4ee5\u4e0a</span></div>' +
+        '<div class="fee-summary-grid js-fee-summary"></div><div class="fee-table js-fee-bands"></div>' +
+        '<article class="chart-card-lite"><h4>\u9ad8\u98ce\u9669 SKU \u9884\u4f30\u6263\u8d39</h4>' +
+        '<div class="fee-risk-list js-fee-risk-skus"></div></article></article>' +
 
-      <article class="panel layer2-module">
-        <div class="panel-heading">
-          <div>
-            <p class="panel-kicker">模块6</p>
-            <h3>不可售库存池</h3>
-          </div>
-          <span class="pill pill-warning">自动移除 / 弃置期限提示</span>
-        </div>
-        <div class="unsellable-summary js-unsellable-summary"></div>
-        <div class="unsellable-grid">
-          <article class="chart-card-lite">
-            <h4>不可售原因分布</h4>
-            <div class="unsellable-reasons js-unsellable-reasons"></div>
-          </article>
-          <article class="chart-card-lite">
-            <h4>处理期限追踪</h4>
-            <div class="deadline-list js-unsellable-deadlines"></div>
-          </article>
-        </div>
-      </article>
-    `;
+      '<article class="panel layer2-module">' +
+        '<div class="panel-heading"><div><p class="panel-kicker">\u6a21\u57576</p><h3>\u4e0d\u53ef\u552e\u5e93\u5b58\u6c60</h3></div>' +
+        '<span class="pill pill-warning">\u81ea\u52a8\u79fb\u9664 / \u5f03\u7f6e\u671f\u9650\u63d0\u793a</span></div>' +
+        '<div class="unsellable-summary js-unsellable-summary"></div>' +
+        '<div class="unsellable-grid"><article class="chart-card-lite"><h4>\u4e0d\u53ef\u552e\u539f\u56e0\u5206\u5e03</h4>' +
+        '<div class="unsellable-reasons js-unsellable-reasons"></div></article>' +
+        '<article class="chart-card-lite"><h4>\u5904\u7406\u671f\u9650\u8ffd\u8e2a</h4>' +
+        '<div class="deadline-list js-unsellable-deadlines"></div></article></div></article>';
 
-    const abc = layer.abcDistribution;
-    let activeDimension = abc.defaultDimension;
-    let activeMetric = abc.defaultMetric;
-
-    const abcDimensionSwitch = root.querySelector(".js-abc-dimension-switch");
-    const abcMetricSwitch = root.querySelector(".js-abc-metric-switch");
-    const abcBarTarget = root.querySelector(".js-abc-bar");
-    const abcPieTarget = root.querySelector(".js-abc-pie");
+    var abc = layer.abcDistribution;
+    var activeDimension = abc.defaultDimension;
+    var activeMetric = abc.defaultMetric;
 
     function paintAbc() {
-      const items = abc.dataByDimension?.[activeDimension]?.[activeMetric] || [];
-      renderAbcBars(abcBarTarget, items);
-      renderDonut(abcPieTarget, items, activeMetric);
+      var items = ((abc.dataByDimension || {})[activeDimension] || {})[activeMetric] || [];
+      renderAbcBars(root.querySelector(".js-abc-bar"), items);
+      renderEChartsPie(root.querySelector(".js-abc-pie"), items, activeMetric);
     }
-
     function bindAbcDimensionSwitch() {
-      renderSegmentSwitch(abcDimensionSwitch, abc.dimensionOptions, activeDimension, (next) => {
-        activeDimension = next;
-        bindAbcDimensionSwitch();
-        paintAbc();
+      renderSegmentSwitch(root.querySelector(".js-abc-dimension-switch"), abc.dimensionOptions, activeDimension, function (next) {
+        activeDimension = next; bindAbcDimensionSwitch(); paintAbc();
       });
     }
-
     function bindAbcMetricSwitch() {
-      renderSegmentSwitch(abcMetricSwitch, abc.metricOptions, activeMetric, (next) => {
-        activeMetric = next;
-        bindAbcMetricSwitch();
-        paintAbc();
+      renderSegmentSwitch(root.querySelector(".js-abc-metric-switch"), abc.metricOptions, activeMetric, function (next) {
+        activeMetric = next; bindAbcMetricSwitch(); paintAbc();
       });
     }
-
     bindAbcDimensionSwitch();
     bindAbcMetricSwitch();
     paintAbc();
@@ -634,49 +240,33 @@
     renderTurnoverList(root.querySelector(".js-turnover-fast"), layer.turnoverRanking.top10, "fast");
     renderTurnoverList(root.querySelector(".js-turnover-slow"), layer.turnoverRanking.bottom10, "slow");
 
-    const structure = layer.structureCompare;
-    const structureSwitch = root.querySelector(".js-structure-scope-switch");
-    let activeScope = structure.defaultScope;
-
+    var structure = layer.structureCompare;
+    var activeScope = structure.defaultScope;
     function paintStructure() {
-      renderGroupedBarChart(
-        root.querySelector(".js-structure-compare-chart"),
-        structure.labels,
-        structure.inventoryByScope?.[activeScope] || [],
-        structure.sales
-      );
+      renderGroupedBarChart(root.querySelector(".js-structure-compare-chart"), structure.labels,
+        (structure.inventoryByScope || {})[activeScope] || [], structure.sales);
     }
-
     function bindStructureSwitch() {
-      renderSegmentSwitch(structureSwitch, structure.scopeOptions, activeScope, (next) => {
-        activeScope = next;
-        bindStructureSwitch();
-        paintStructure();
+      renderSegmentSwitch(root.querySelector(".js-structure-scope-switch"), structure.scopeOptions, activeScope, function (next) {
+        activeScope = next; bindStructureSwitch(); paintStructure();
       });
     }
-
     bindStructureSwitch();
     paintStructure();
 
-    const aging = layer.agingStructure;
-    const agingSwitch = root.querySelector(".js-aging-warehouse-switch");
-    let activeWarehouse = aging.defaultWarehouse;
-
+    var aging = layer.agingStructure;
+    var activeWarehouse = aging.defaultWarehouse;
     function paintAging() {
-      const data = aging.dataByWarehouse?.[activeWarehouse];
+      var data = (aging.dataByWarehouse || {})[activeWarehouse];
       if (!data) return;
-      renderDonut(root.querySelector(".js-aging-pie"), data.share, activeWarehouse);
+      renderEChartsPie(root.querySelector(".js-aging-pie"), data.share, activeWarehouse);
       renderAgingDistributionChart(root.querySelector(".js-aging-area"), data.distribution);
     }
-
     function bindAgingSwitch() {
-      renderSegmentSwitch(agingSwitch, aging.warehouseOptions, activeWarehouse, (next) => {
-        activeWarehouse = next;
-        bindAgingSwitch();
-        paintAging();
+      renderSegmentSwitch(root.querySelector(".js-aging-warehouse-switch"), aging.warehouseOptions, activeWarehouse, function (next) {
+        activeWarehouse = next; bindAgingSwitch(); paintAging();
       });
     }
-
     bindAgingSwitch();
     paintAging();
 

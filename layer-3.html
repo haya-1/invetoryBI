@@ -8,11 +8,14 @@
   </head>
   <body data-layer="layer3">
     <div class="app-shell">
-      <header class="site-header site-header--compact panel">
-        <div class="site-header__top">
+      <header class="site-header panel">
+        <div class="site-header__top site-header__top--layer1">
           <div class="site-header__brand">
-            <p class="eyebrow">库存分析 BI 看板</p>
-            <h1>第三层 · 预警与补货</h1>
+            <h1>库存分析BI看板</h1>
+            <p class="site-header__summary">第三层 · 动态预警与补货建议看板</p>
+          </div>
+          <div class="site-header__meta">
+            <span class="pill pill-muted">数据更新时间 <strong class="js-updated-at">--</strong></span>
           </div>
         </div>
         <nav class="layer-nav" aria-label="层级导航">
@@ -25,12 +28,14 @@
 
       <main class="page-stack">
         <section class="toolbar panel js-toolbar" aria-label="筛选区"></section>
-        <section class="placeholder-grid js-module-grid" aria-label="第三层基础图表区"></section>
+        <section class="layer3-stack js-layer3-page" aria-label="第三层执行闭环分析模块"></section>
       </main>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script src="./js/data.js"></script>
     <script src="./js/charts/overview.js"></script>
+    <script src="./js/charts/layer3.js"></script>
     <script src="./js/app.js"></script>
   </body>
 </html>

@@ -1,70 +1,25 @@
 (function () {
-  const SVG_NS = "http://www.w3.org/2000/svg";
   let riskPanelResizeBound = false;
 
-  function createSvgElement(tag, attrs) {
-    const node = document.createElementNS(SVG_NS, tag);
-    Object.entries(attrs || {}).forEach(([key, value]) => {
-      node.setAttribute(key, String(value));
-    });
-    return node;
-  }
-
-  function buildLinePath(points) {
-    return points
-      .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
-      .join(" ");
-  }
-
-  function buildAreaPath(points, baseline) {
-    const line = buildLinePath(points);
-    const last = points[points.length - 1];
-    const first = points[0];
-    return `${line} L ${last.x} ${baseline} L ${first.x} ${baseline} Z`;
-  }
-
-  function scaleSeries(series, labels, width, height, margin) {
-    const allValues = series.flatMap((item) => item.data);
-    const min = Math.min(...allValues);
-    const max = Math.max(...allValues);
-    const span = max - min || 1;
-    const xStep = (width - margin.left - margin.right) / (labels.length - 1 || 1);
-
-    return series.map((item) => ({
-      ...item,
-      points: item.data.map((value, index) => ({
-        x: margin.left + index * xStep,
-        y: margin.top + ((max - value) / span) * (height - margin.top - margin.bottom),
-      })),
-    }));
-  }
-
   function formatAmount(value) {
-    return `¥${(value / 10000).toFixed(1)}万`;
+    return "\u00a5" + (value / 10000).toFixed(1) + "\u4e07";
   }
 
   function formatQuantity(value) {
-    return `${value.toLocaleString("zh-CN")} 件`;
+    return value.toLocaleString("zh-CN") + " \u4ef6";
   }
 
   function renderSegmentSwitch(target, options, activeValue, onChange) {
     if (!target) return;
-
     target.innerHTML = options
-      .map(
-        (option) => `
-          <button
-            class="seg-btn${option === activeValue ? " is-active" : ""}"
-            type="button"
-            data-seg-value="${option}"
-          >${option}</button>
-        `
-      )
+      .map(function (option) {
+        return '<button class="seg-btn' + (option === activeValue ? " is-active" : "") +
+          '" type="button" data-seg-value="' + option + '">' + option + "</button>";
+      })
       .join("");
-
-    target.querySelectorAll("[data-seg-value]").forEach((node) => {
-      node.addEventListener("click", () => {
-        const value = node.getAttribute("data-seg-value");
+    target.querySelectorAll("[data-seg-value]").forEach(function (node) {
+      node.addEventListener("click", function () {
+        var value = node.getAttribute("data-seg-value");
         if (!value || value === activeValue) return;
         onChange(value);
       });
@@ -72,346 +27,220 @@
   }
 
   function renderMetricCard(metric, showDeltas) {
-    const deltas = showDeltas && Array.isArray(metric.deltas) && metric.deltas.length > 0
-      ? `
-        <div class="metric-deltas">
-          ${metric.deltas
-            .map((delta) => `<span class="delta-chip tone-${delta.tone}">${delta.label} ${delta.value}</span>`)
-            .join("")}
-        </div>
-      `
-      : "";
-
-    return `
-      <article class="metric-card">
-        <p class="metric-title">${metric.title}</p>
-        <p class="metric-value">${metric.value}${metric.unit ? `<span class="metric-unit">${metric.unit}</span>` : ""}</p>
-        <p class="metric-caption">${metric.caption}</p>
-        ${deltas}
-      </article>
-    `;
+    var deltas = "";
+    if (showDeltas && Array.isArray(metric.deltas) && metric.deltas.length > 0) {
+      deltas = '<div class="metric-deltas">' +
+        metric.deltas.map(function (d) {
+          return '<span class="delta-chip tone-' + d.tone + '">' + d.label + " " + d.value + "</span>";
+        }).join("") + "</div>";
+    }
+    return '<article class="metric-card">' +
+      '<p class="metric-title">' + metric.title + "</p>" +
+      '<p class="metric-value">' + metric.value +
+      (metric.unit ? '<span class="metric-unit">' + metric.unit + "</span>" : "") + "</p>" +
+      '<p class="metric-caption">' + metric.caption + "</p>" +
+      deltas + "</article>";
   }
 
   function renderStaticKpiGroup(group, kicker) {
-    return `
-      <article class="panel kpi-group-panel">
-        <div class="panel-heading panel-heading--compact">
-          <div>
-            <p class="panel-kicker">${kicker}</p>
-            <h3>${group.title}</h3>
-          </div>
-          <span class="group-hint">${group.hint}</span>
-        </div>
-        <div class="kpi-row">
-          ${group.metrics.map((metric) => renderMetricCard(metric, group.showDeltas)).join("")}
-        </div>
-      </article>
-    `;
+    return '<article class="panel kpi-group-panel">' +
+      '<div class="panel-heading panel-heading--compact"><div>' +
+      '<p class="panel-kicker">' + kicker + "</p>" +
+      "<h3>" + group.title + "</h3></div>" +
+      '<span class="group-hint">' + group.hint + "</span></div>" +
+      '<div class="kpi-row">' +
+      group.metrics.map(function (m) { return renderMetricCard(m, group.showDeltas); }).join("") +
+      "</div></article>";
   }
 
   function renderKpis(layer) {
-    const container = document.querySelector(".js-kpi-groups");
+    var container = document.querySelector(".js-kpi-groups");
     if (!container || !layer.kpiGroups) return;
+    var g = layer.kpiGroups;
+    var activeValueType = g.fundingRisk.defaultValueType;
+    var activeWarehouse = g.fundingRisk.defaultWarehouse;
 
-    const { inventoryScale, turnoverEfficiency, fundingRisk } = layer.kpiGroups;
-    let activeValueType = fundingRisk.defaultValueType;
-    let activeWarehouse = fundingRisk.defaultWarehouse;
+    container.innerHTML =
+      renderStaticKpiGroup(g.inventoryScale, "\u6838\u5fc3\u6307\u6807") +
+      renderStaticKpiGroup(g.turnoverEfficiency, "\u6838\u5fc3\u6307\u6807") +
+      '<article class="panel kpi-group-panel">' +
+      '<div class="panel-heading panel-heading--compact"><div>' +
+      '<p class="panel-kicker">\u6838\u5fc3\u6307\u6807</p>' +
+      "<h3>" + g.fundingRisk.title + "</h3></div>" +
+      '<span class="group-hint">' + g.fundingRisk.hint + "</span></div>" +
+      '<div class="kpi-group-switches">' +
+      '<div class="panel-switch js-funding-value-switch"></div>' +
+      '<div class="panel-switch js-funding-warehouse-switch"></div></div>' +
+      '<div class="kpi-row js-funding-risk-cards"></div></article>';
 
-    container.innerHTML = `
-      ${renderStaticKpiGroup(inventoryScale, "核心指标")}
-      ${renderStaticKpiGroup(turnoverEfficiency, "核心指标")}
-      <article class="panel kpi-group-panel">
-        <div class="panel-heading panel-heading--compact">
-          <div>
-            <p class="panel-kicker">核心指标</p>
-            <h3>${fundingRisk.title}</h3>
-          </div>
-          <span class="group-hint">${fundingRisk.hint}</span>
-        </div>
-        <div class="kpi-group-switches">
-          <div class="panel-switch js-funding-value-switch" aria-label="资金风险口径切换"></div>
-          <div class="panel-switch js-funding-warehouse-switch" aria-label="资金风险仓别切换"></div>
-        </div>
-        <div class="kpi-row js-funding-risk-cards"></div>
-      </article>
-    `;
-
-    const valueSwitchNode = container.querySelector(".js-funding-value-switch");
-    const warehouseSwitchNode = container.querySelector(".js-funding-warehouse-switch");
-    const cardsNode = container.querySelector(".js-funding-risk-cards");
+    var cardsNode = container.querySelector(".js-funding-risk-cards");
 
     function paintFundingMetrics() {
       if (!cardsNode) return;
-
-      const metrics = fundingRisk.metricsByView?.[activeValueType]?.[activeWarehouse] || [];
-      cardsNode.innerHTML = metrics.map((metric) => renderMetricCard(metric, false)).join("");
+      var metrics = (g.fundingRisk.metricsByView[activeValueType] || {})[activeWarehouse] || [];
+      cardsNode.innerHTML = metrics.map(function (m) { return renderMetricCard(m, false); }).join("");
     }
 
     function bindFundingValueSwitch() {
-      renderSegmentSwitch(valueSwitchNode, fundingRisk.valueTypeOptions, activeValueType, (next) => {
-        activeValueType = next;
-        bindFundingValueSwitch();
-        paintFundingMetrics();
-      });
+      renderSegmentSwitch(container.querySelector(".js-funding-value-switch"),
+        g.fundingRisk.valueTypeOptions, activeValueType, function (next) {
+          activeValueType = next;
+          bindFundingValueSwitch();
+          paintFundingMetrics();
+        });
     }
 
     function bindFundingWarehouseSwitch() {
-      renderSegmentSwitch(warehouseSwitchNode, fundingRisk.warehouseOptions, activeWarehouse, (next) => {
-        activeWarehouse = next;
-        bindFundingWarehouseSwitch();
-        paintFundingMetrics();
-      });
+      renderSegmentSwitch(container.querySelector(".js-funding-warehouse-switch"),
+        g.fundingRisk.warehouseOptions, activeWarehouse, function (next) {
+          activeWarehouse = next;
+          bindFundingWarehouseSwitch();
+          paintFundingMetrics();
+        });
     }
 
     bindFundingValueSwitch();
     bindFundingWarehouseSwitch();
-
     paintFundingMetrics();
   }
 
   function renderHealthScore(layer) {
-    const chartTarget = document.querySelector(".js-health-score-chart");
-    const summaryTarget = document.querySelector(".js-health-score-summary");
-    const factorsTarget = document.querySelector(".js-health-score-factors");
+    var chartTarget = document.querySelector(".js-health-score-chart");
+    var summaryTarget = document.querySelector(".js-health-score-summary");
+    var factorsTarget = document.querySelector(".js-health-score-factors");
     if (!chartTarget || !summaryTarget || !factorsTarget) return;
 
-    const score = layer.healthScore.score;
-    const size = 214;
-    const radius = 72;
-    const circumference = 2 * Math.PI * radius;
-    const dashOffset = circumference * (1 - score / 100);
-
-    chartTarget.innerHTML = `
-      <svg class="score-svg" viewBox="0 0 ${size} ${size}" role="img" aria-label="库存健康度评分 ${score}">
-        <defs>
-          <linearGradient id="scoreGradient" x1="0%" x2="100%" y1="0%" y2="100%">
-            <stop offset="0%" stop-color="#0f7068"></stop>
-            <stop offset="100%" stop-color="#bf7b22"></stop>
-          </linearGradient>
-        </defs>
-        <circle cx="${size / 2}" cy="${size / 2}" r="${radius}" fill="none" stroke="rgba(23,48,49,0.08)" stroke-width="16"></circle>
-        <circle
-          cx="${size / 2}"
-          cy="${size / 2}"
-          r="${radius}"
-          fill="none"
-          stroke="url(#scoreGradient)"
-          stroke-linecap="round"
-          stroke-width="16"
-          stroke-dasharray="${circumference}"
-          stroke-dashoffset="${dashOffset}"
-          transform="rotate(-90 ${size / 2} ${size / 2})"
-        ></circle>
-        <text x="50%" y="46%" text-anchor="middle" font-size="46" font-weight="800" fill="#173031">${score}</text>
-        <text x="50%" y="59%" text-anchor="middle" font-size="16" fill="#5f7477">${layer.healthScore.grade}</text>
-        <text x="50%" y="73%" text-anchor="middle" font-size="11" fill="#5f7477">0-100 综合评分</text>
-      </svg>
-    `;
+    var score = layer.healthScore.score;
+    chartTarget.innerHTML = '<div class="echart-box-sm" style="min-height:170px"></div>';
+    var chart = echarts.init(chartTarget.querySelector(".echart-box-sm"));
+    chart.setOption({
+      series: [{
+        type: "gauge",
+        startAngle: 200,
+        endAngle: -20,
+        min: 0,
+        max: 100,
+        radius: "90%",
+        progress: { show: true, width: 14, itemStyle: { color: "#2a9d8f" } },
+        axisLine: { lineStyle: { width: 14, color: [[1, "#e0e0e0"]] } },
+        axisTick: { show: false },
+        splitLine: { show: false },
+        axisLabel: { show: false },
+        pointer: { show: false },
+        title: { offsetCenter: [0, "30%"], fontSize: 12, color: "#666" },
+        detail: { valueAnimation: true, offsetCenter: [0, "-5%"], fontSize: 32, fontWeight: 700, color: "#1d3557",
+          formatter: "{value}" },
+        data: [{ value: score, name: layer.healthScore.grade }],
+      }],
+    });
+    window.addEventListener("resize", function () { chart.resize(); });
 
     summaryTarget.textContent = layer.healthScore.summary;
-    factorsTarget.innerHTML = layer.healthScore.factors
-      .map(
-        (factor) => `
-          <div class="factor-card">
-            <div class="factor-card__top">
-              <span>${factor.label}</span>
-              <span class="delta-chip tone-${factor.tone}">${factor.value} 分</span>
-            </div>
-            <div class="factor-track"><span style="width:${factor.value}%"></span></div>
-          </div>
-        `
-      )
-      .join("");
+    summaryTarget.style.cssText = "font-size:0.78rem;color:#666;line-height:1.5;margin:0";
+    factorsTarget.innerHTML = layer.healthScore.factors.map(function (f) {
+      return '<div class="factor-card"><div class="factor-card__top"><span>' + f.label +
+        '</span><span class="delta-chip tone-' + f.tone + '">' + f.value +
+        ' \u5206</span></div><div class="factor-track"><span style="width:' + f.value + '%"></span></div></div>';
+    }).join("");
   }
 
   function renderRiskRatings(layer) {
-    const target = document.querySelector(".js-risk-rating-list");
+    var target = document.querySelector(".js-risk-rating-list");
     if (!target || !layer.riskRatings) return;
-
-    target.innerHTML = `
-      <div class="risk-summary">
-        ${layer.riskRatings.summary
-          .map(
-            (item) => `
-              <div class="risk-card">
-                <strong>${item.count}</strong>
-                <span>${item.level}</span>
-              </div>
-            `
-          )
-          .join("")}
-      </div>
-      <div class="risk-rating-cards">
-        ${layer.riskRatings.categories
-          .map(
-            (item) => `
-              <article class="risk-rating-card">
-                <div class="risk-rating-card__top">
-                  <h4>${item.category}</h4>
-                  <span class="delta-chip tone-${item.tone}">${item.level}</span>
-                </div>
-                <div class="risk-rating-card__metrics">
-                  <span>呆滞率 ${item.stagnantRate}</span>
-                  <span>库销比 ${item.stockSalesRatio}</span>
-                  <span>周转天数 ${item.turnoverDays}</span>
-                </div>
-                <p>${item.explanation}</p>
-              </article>
-            `
-          )
-          .join("")}
-      </div>
-    `;
+    target.innerHTML =
+      '<div class="risk-summary">' +
+      layer.riskRatings.summary.map(function (item) {
+        return '<div class="risk-card"><strong>' + item.count + '</strong><span>' + item.level + '</span></div>';
+      }).join("") + "</div>" +
+      '<div class="risk-rating-cards">' +
+      layer.riskRatings.categories.map(function (item) {
+        return '<article class="risk-rating-card"><div class="risk-rating-card__top"><h4>' + item.category +
+          '</h4><span class="delta-chip tone-' + item.tone + '">' + item.level + '</span></div>' +
+          '<div class="risk-rating-card__metrics">' +
+          '<span>\u5446\u6ede\u7387 ' + item.stagnantRate + '</span>' +
+          '<span>\u5e93\u9500\u6bd4 ' + item.stockSalesRatio + '</span>' +
+          '<span>\u5468\u8f6c\u5929\u6570 ' + item.turnoverDays + '</span></div>' +
+          '<p>' + item.explanation + '</p></article>';
+      }).join("") + "</div>";
   }
 
   function syncRiskPanelHeight() {
-    const healthPanel = document.querySelector(".panel-spotlight");
-    const riskPanel = document.querySelector(".js-risk-panel");
-    const riskCards = riskPanel?.querySelector(".risk-rating-cards");
-    if (!healthPanel || !riskPanel || !riskCards) return;
-
+    var healthPanel = document.querySelector(".panel-spotlight");
+    var riskPanel = document.querySelector(".js-risk-panel");
+    if (!healthPanel || !riskPanel) return;
     riskPanel.style.height = "";
     if (window.matchMedia("(max-width: 1320px)").matches) return;
-
-    const targetHeight = Math.round(healthPanel.getBoundingClientRect().height);
-    if (targetHeight > 0) {
-      riskPanel.style.height = `${targetHeight}px`;
-    }
+    var h = Math.round(healthPanel.getBoundingClientRect().height);
+    if (h > 0) riskPanel.style.height = h + "px";
   }
 
   function bindRiskPanelResizeSync() {
     if (riskPanelResizeBound) return;
-
-    window.addEventListener("resize", () => {
-      syncRiskPanelHeight();
-    });
+    window.addEventListener("resize", syncRiskPanelHeight);
     riskPanelResizeBound = true;
   }
 
-  function renderLineChart(selector, chartData, label) {
-    const target = document.querySelector(selector);
-    if (!target) return;
-
-    const width = 720;
-    const height = 300;
-    const margin = { top: 20, right: 18, bottom: 36, left: 42 };
-    const allValues = chartData.series.flatMap((item) => item.data);
-    const min = Math.min(...allValues);
-    const max = Math.max(...allValues);
-    const scaled = scaleSeries(chartData.series, chartData.labels, width, height, margin);
-    const svg = createSvgElement("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": label });
-
-    for (let i = 0; i <= 4; i += 1) {
-      const ratio = i / 4;
-      const y = margin.top + ratio * (height - margin.top - margin.bottom);
-      const value = Math.round(max - (max - min) * ratio);
-
-      svg.appendChild(createSvgElement("line", { x1: margin.left, y1: y, x2: width - margin.right, y2: y, class: "chart-grid-line" }));
-      const axis = createSvgElement("text", {
-        x: margin.left - 10,
-        y: y + 4,
-        "text-anchor": "end",
-        class: "chart-axis-label",
-      });
-      axis.textContent = String(value);
-      svg.appendChild(axis);
-    }
-
-    chartData.labels.forEach((labelText, index) => {
-      const x = margin.left + (index / (chartData.labels.length - 1 || 1)) * (width - margin.left - margin.right);
-      const axis = createSvgElement("text", {
-        x,
-        y: height - 12,
-        "text-anchor": "middle",
-        class: "chart-axis-label",
-      });
-      axis.textContent = labelText;
-      svg.appendChild(axis);
-    });
-
-    scaled.forEach((series) => {
-      if (series.area) {
-        svg.appendChild(
-          createSvgElement("path", {
-            d: buildAreaPath(series.points, height - margin.bottom),
-            class: "chart-area",
-            fill: series.fill,
-          })
-        );
+  function renderEChartsLine(selector, chartData, ariaLabel) {
+    var target = document.querySelector(selector);
+    if (!target || !chartData) return;
+    target.innerHTML = '<div class="echart-box"></div>';
+    var chart = echarts.init(target.querySelector(".echart-box"));
+    var series = chartData.series.map(function (s) {
+      var opt = {
+        name: s.name,
+        type: "line",
+        data: s.data,
+        smooth: true,
+        symbol: "circle",
+        symbolSize: 5,
+        lineStyle: { width: 2.5, color: s.color },
+        itemStyle: { color: s.color },
+      };
+      if (s.area) {
+        opt.areaStyle = { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: s.color.replace(")", ",0.25)").replace("rgb", "rgba") },
+          { offset: 1, color: "rgba(255,255,255,0)" },
+        ]) };
       }
-
-      svg.appendChild(
-        createSvgElement("path", {
-          d: buildLinePath(series.points),
-          class: "chart-line",
-          stroke: series.color,
-        })
-      );
-
-      series.points.forEach((point) => {
-        svg.appendChild(
-          createSvgElement("circle", {
-            cx: point.x,
-            cy: point.y,
-            r: 4.2,
-            class: "chart-point",
-            fill: series.color,
-          })
-        );
-      });
+      return opt;
     });
 
-    target.innerHTML = "";
-    const wrap = document.createElement("div");
-    wrap.className = "chart-wrap";
-    wrap.appendChild(svg);
-    const legend = document.createElement("div");
-    legend.className = "chart-legend";
-    legend.innerHTML = chartData.series
-      .map(
-        (series) => `
-          <span class="legend-item">
-            <span class="legend-swatch" style="background:${series.color}"></span>
-            ${series.name}
-          </span>
-        `
-      )
-      .join("");
-    target.append(wrap, legend);
+    chart.setOption({
+      tooltip: { trigger: "axis" },
+      legend: { data: chartData.series.map(function (s) { return s.name; }), bottom: 0, textStyle: { fontSize: 11 } },
+      grid: { left: 46, right: 16, top: 16, bottom: 40 },
+      xAxis: { type: "category", data: chartData.labels, boundaryGap: false,
+        axisLabel: { fontSize: 11, color: "#999" }, axisLine: { lineStyle: { color: "#e0e0e0" } } },
+      yAxis: { type: "value",
+        axisLabel: { fontSize: 11, color: "#999" }, splitLine: { lineStyle: { color: "#f0f0f0" } } },
+      series: series,
+    });
+    window.addEventListener("resize", function () { chart.resize(); });
   }
 
   function renderTrendSection(layer) {
-    const scopeOptions = layer.trendScopeOptions || ["总体"];
-    let activeOutboundScope = scopeOptions[0];
-    let activeBalanceScope = scopeOptions[0];
-
-    const outboundSwitch = document.querySelector(".js-outbound-scope-switch");
-    const balanceSwitch = document.querySelector(".js-balance-scope-switch");
+    var scopeOptions = layer.trendScopeOptions || ["\u603b\u4f53"];
+    var activeOutboundScope = scopeOptions[0];
+    var activeBalanceScope = scopeOptions[0];
 
     function paintOutbound() {
-      const data = layer.outboundInboundByScope?.[activeOutboundScope];
-      if (data) {
-        renderLineChart(".js-outbound-inbound-chart", data, `出入库趋势-${activeOutboundScope}`);
-      }
+      var data = (layer.outboundInboundByScope || {})[activeOutboundScope];
+      if (data) renderEChartsLine(".js-outbound-inbound-chart", data, "\u51fa\u5165\u5e93\u8d8b\u52bf");
     }
-
     function paintBalance() {
-      const data = layer.balanceTrendByScope?.[activeBalanceScope];
-      if (data) {
-        renderLineChart(".js-balance-chart", data, `库存余额趋势-${activeBalanceScope}`);
-      }
+      var data = (layer.balanceTrendByScope || {})[activeBalanceScope];
+      if (data) renderEChartsLine(".js-balance-chart", data, "\u5e93\u5b58\u4f59\u989d\u8d8b\u52bf");
     }
 
     function bindOutboundSwitch() {
-      renderSegmentSwitch(outboundSwitch, scopeOptions, activeOutboundScope, (next) => {
+      renderSegmentSwitch(document.querySelector(".js-outbound-scope-switch"), scopeOptions, activeOutboundScope, function (next) {
         activeOutboundScope = next;
         bindOutboundSwitch();
         paintOutbound();
       });
     }
-
     function bindBalanceSwitch() {
-      renderSegmentSwitch(balanceSwitch, scopeOptions, activeBalanceScope, (next) => {
+      renderSegmentSwitch(document.querySelector(".js-balance-scope-switch"), scopeOptions, activeBalanceScope, function (next) {
         activeBalanceScope = next;
         bindBalanceSwitch();
         paintBalance();
@@ -420,53 +249,41 @@
 
     bindOutboundSwitch();
     bindBalanceSwitch();
-
     paintOutbound();
     paintBalance();
   }
 
   function renderStagnantTable(target, rows, activeSort) {
     if (!target) return;
-
-    target.innerHTML = rows
-      .map((item, index) => {
-        const primaryValue = activeSort === "按金额" ? formatAmount(item.amount) : formatQuantity(item.quantity);
-        const secondaryValue = activeSort === "按金额" ? formatQuantity(item.quantity) : formatAmount(item.amount);
-
-        return `
-          <div class="rank-table-row">
-            <span class="rank-index">${String(index + 1).padStart(2, "0")}</span>
-            <span class="rank-name">${item.name}</span>
-            <span class="rank-primary">${primaryValue}</span>
-            <span class="rank-secondary">${secondaryValue}</span>
-          </div>
-        `;
-      })
-      .join("");
+    target.innerHTML = rows.map(function (item, index) {
+      var primary = activeSort === "\u6309\u91d1\u989d" ? formatAmount(item.amount) : formatQuantity(item.quantity);
+      var secondary = activeSort === "\u6309\u91d1\u989d" ? formatQuantity(item.quantity) : formatAmount(item.amount);
+      return '<div class="rank-table-row"><span class="rank-index">' + String(index + 1).padStart(2, "0") +
+        '</span><span class="rank-name">' + item.name +
+        '</span><span class="rank-primary">' + primary +
+        '</span><span class="rank-secondary">' + secondary + '</span></div>';
+    }).join("");
   }
 
   function renderStagnantAnalysis(layer) {
-    const section = layer.stagnantAnalysis;
+    var section = layer.stagnantAnalysis;
     if (!section) return;
-
-    const categoryTarget = document.querySelector(".js-stagnant-category");
-    const warehouseTarget = document.querySelector(".js-stagnant-warehouse");
-    const switchTarget = document.querySelector(".js-stagnant-sort-switch");
-    let activeSort = section.defaultSort;
+    var categoryTarget = document.querySelector(".js-stagnant-category");
+    var warehouseTarget = document.querySelector(".js-stagnant-warehouse");
+    var switchTarget = document.querySelector(".js-stagnant-sort-switch");
+    var activeSort = section.defaultSort;
 
     function paintTables() {
-      renderStagnantTable(categoryTarget, section.categoryTop10?.[activeSort] || [], activeSort);
-      renderStagnantTable(warehouseTarget, section.warehouseTop10?.[activeSort] || [], activeSort);
+      renderStagnantTable(categoryTarget, (section.categoryTop10 || {})[activeSort] || [], activeSort);
+      renderStagnantTable(warehouseTarget, (section.warehouseTop10 || {})[activeSort] || [], activeSort);
     }
-
     function bindSortSwitch() {
-      renderSegmentSwitch(switchTarget, section.sortOptions, activeSort, (next) => {
+      renderSegmentSwitch(switchTarget, section.sortOptions, activeSort, function (next) {
         activeSort = next;
         bindSortSwitch();
         paintTables();
       });
     }
-
     bindSortSwitch();
     paintTables();
   }

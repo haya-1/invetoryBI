@@ -258,6 +258,20 @@
       return;
     }
 
+    if (layerKey === "layer3") {
+      if (typeof window.renderLayer3Page === "function") {
+        window.renderLayer3Page(layer);
+      }
+      return;
+    }
+
+    if (layerKey === "layer4") {
+      if (typeof window.renderLayer4Page === "function") {
+        window.renderLayer4Page(layer);
+      }
+      return;
+    }
+
     renderPlaceholderPage(layer);
   });
 })();
