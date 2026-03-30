@@ -43,8 +43,8 @@ window.inventoryBIPrototype = {
               unit: "天",
               caption: "统计期天数 / 库存周转次数",
               deltas: [
-                { label: "MoM", value: "-1.8%", tone: "negative" },
-                { label: "YoY", value: "-6.5%", tone: "negative" },
+                { label: "环比", value: "-1.8%", tone: "negative" },
+                { label: "同比", value: "-6.5%", tone: "negative" },
               ],
             },
             {
@@ -53,8 +53,8 @@ window.inventoryBIPrototype = {
               unit: "次",
               caption: "销售成本 / 平均库存成本",
               deltas: [
-                { label: "MoM", value: "+3.2%", tone: "positive" },
-                { label: "YoY", value: "+5.8%", tone: "positive" },
+                { label: "环比", value: "+3.2%", tone: "positive" },
+                { label: "同比", value: "+5.8%", tone: "positive" },
               ],
             },
             {
@@ -63,8 +63,8 @@ window.inventoryBIPrototype = {
               unit: "%",
               caption: "出库 SKU / 总 SKU",
               deltas: [
-                { label: "MoM", value: "+1.1%", tone: "positive" },
-                { label: "YoY", value: "+4.3%", tone: "positive" },
+                { label: "环比", value: "+1.1%", tone: "positive" },
+                { label: "同比", value: "+4.3%", tone: "positive" },
               ],
             },
             {
@@ -73,8 +73,8 @@ window.inventoryBIPrototype = {
               unit: "",
               caption: "期末库存量 / 统计期销量",
               deltas: [
-                { label: "MoM", value: "-2.4%", tone: "negative" },
-                { label: "YoY", value: "-3.9%", tone: "negative" },
+                { label: "环比", value: "-2.4%", tone: "negative" },
+                { label: "同比", value: "-3.9%", tone: "negative" },
               ],
             },
           ],
