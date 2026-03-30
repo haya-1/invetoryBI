@@ -79,9 +79,9 @@
           return d[3] + "<br/>\u9500\u91cf\u6307\u6570: " + d[0] + "<br/>\u5e93\u5b58\u6307\u6570: " + d[1] + "<br/>\u5e93\u5b58: " + d[2];
         },
       },
-      legend: { bottom: 0, textStyle: { fontSize: 11 } },
-      grid: { left: 56, right: 22, top: 22, bottom: 46 },
-      xAxis: { name: matrix.xLabel, nameLocation: "center", nameGap: 30, min: 0, max: 100,
+      legend: { bottom: 0, textStyle: { fontSize: 11 }, itemGap: 16 },
+      grid: { left: 56, right: 22, top: 22, bottom: 72 },
+      xAxis: { name: matrix.xLabel, nameLocation: "center", nameGap: 26, min: 0, max: 100,
         axisLabel: { fontSize: 10 }, splitLine: { lineStyle: { color: "#f0f0f0" } } },
       yAxis: { name: matrix.yLabel, nameLocation: "center", nameGap: 40, min: 0, max: 100,
         axisLabel: { fontSize: 10 }, splitLine: { lineStyle: { color: "#f0f0f0" } } },

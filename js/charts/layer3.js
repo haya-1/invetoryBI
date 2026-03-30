@@ -86,15 +86,43 @@
       }).join("");
   }
 
+  function renderEChartsHBar(target, labels, values, colors, opts) {
+    if (!target || !labels.length) return;
+    var o = opts || {};
+    var unit = o.unit || "";
+    var rowH = o.rowHeight || 30;
+    var h = Math.max(180, labels.length * rowH + 40);
+    target.innerHTML = '<div class="echart-box" style="min-height:' + h + 'px"></div>';
+    var chart = echarts.init(target.querySelector(".echart-box"));
+    chart.setOption({
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" },
+        formatter: function (p) { return p[0].name + ": " + p[0].value + unit; } },
+      grid: { left: o.labelWidth || 80, right: 56, top: 6, bottom: 6, containLabel: false },
+      xAxis: { type: "value", max: o.max || undefined, show: false },
+      yAxis: { type: "category", data: labels, axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { fontSize: 12, color: "#333" } },
+      series: [{
+        type: "bar", barWidth: o.barWidth || 16,
+        data: values.map(function (v, i) { return { value: v, itemStyle: { color: colors[i] || o.color || "#5DADE2" } }; }),
+        showBackground: true,
+        backgroundStyle: { color: "rgba(180,180,180,0.12)", borderRadius: 2 },
+        itemStyle: { borderRadius: 2 },
+        label: { show: true, position: "right", fontSize: 11, fontWeight: 600, color: "#333",
+          formatter: function (p) { return p.value + unit; } },
+      }],
+    });
+    window.addEventListener("resize", function () { chart.resize(); });
+  }
+
   function renderUrgencyBars(target, items) {
-    if (!target || !Array.isArray(items)) return;
-    var max = Math.max.apply(null, items.map(function (i) { return i.value; }).concat([1]));
-    target.innerHTML = items.map(function (item) {
-      var w = (item.value / max) * 100;
-      return '<div class="layer3-bar-row"><div class="layer3-bar-label">' + item.level +
-        '</div><div class="layer3-bar-track"><span style="width:' + w + '%;background:' + item.color + '"></span></div>' +
-        '<div class="layer3-bar-value">' + item.value + (item.suffix || "") + '</div></div>';
-    }).join("");
+    if (!target || !Array.isArray(items) || !items.length) return;
+    var sorted = items.slice().sort(function (a, b) { return a.value - b.value; });
+    var suffix = items[0].suffix || " SKU";
+    renderEChartsHBar(target,
+      sorted.map(function (i) { return i.level; }),
+      sorted.map(function (i) { return i.value; }),
+      sorted.map(function (i) { return i.color; }),
+      { unit: suffix, labelWidth: 70, barWidth: 16 });
   }
 
   function renderAdoptionList(target, items) {
@@ -165,13 +193,13 @@
     var activeRootCause = module.defaultRootCause;
     function paintRootCauseBars() {
       var list = (module.rootCauseData || {})[activeRootCause] || [];
-      var max = Math.max.apply(null, list.map(function (i) { return i.diffRate; }).concat([1]));
-      rootBarsNode.innerHTML = list.map(function (item) {
-        var w = (item.diffRate / max) * 100;
-        return '<div class="layer3-bar-row"><div class="layer3-bar-label">' + item.name +
-          '</div><div class="layer3-bar-track"><span style="width:' + w + '%;background:linear-gradient(90deg,#e63946,#e9c46a)"></span></div>' +
-          '<div class="layer3-bar-value">' + item.diffRate.toFixed(1) + '%</div></div>';
-      }).join("");
+      if (!list.length) return;
+      var sorted = list.slice().sort(function (a, b) { return a.diffRate - b.diffRate; });
+      renderEChartsHBar(rootBarsNode,
+        sorted.map(function (i) { return i.name; }),
+        sorted.map(function (i) { return Math.round(i.diffRate * 10) / 10; }),
+        sorted.map(function () { return "#E74C3C"; }),
+        { unit: "%", labelWidth: 90, barWidth: 14, color: "#E74C3C" });
     }
     function bindRootCauseSwitch() {
       renderSegmentSwitch(switchNode, module.rootCauseOptions, activeRootCause, function (next) {
@@ -201,13 +229,14 @@
       '<article class="layer3-recover-card"><p>\u7d2f\u8ba1\u633d\u56de\u91d1\u989d</p><strong>' + formatAmount(recovered) + '</strong></article>' +
       '<article class="layer3-recover-card"><p>\u76ee\u6807\u8fbe\u6210\u7387</p><strong>' + rate.toFixed(1) + '%</strong></article>';
 
-    var max = Math.max.apply(null, module.monthlyRecovered.map(function (i) { return i.amount; }).concat([1]));
-    trendNode.innerHTML = module.monthlyRecovered.map(function (item) {
-      var w = (item.amount / max) * 100;
-      return '<div class="layer3-bar-row"><div class="layer3-bar-label">' + item.month +
-        '</div><div class="layer3-bar-track"><span style="width:' + w + '%;background:linear-gradient(90deg,#2a9d8f,#457b9d)"></span></div>' +
-        '<div class="layer3-bar-value">' + item.amount + '\u4e07</div></div>';
-    }).join("");
+    var mr = module.monthlyRecovered;
+    if (mr && mr.length) {
+      renderEChartsHBar(trendNode,
+        mr.map(function (i) { return i.month; }),
+        mr.map(function (i) { return i.amount; }),
+        mr.map(function () { return "#2a9d8f"; }),
+        { unit: "\u4e07", labelWidth: 70, barWidth: 14, color: "#2a9d8f" });
+    }
 
     tableNode.innerHTML =
       '<div class="layer3-table-head layer3-claim-row"><span>Case\u7f16\u53f7</span><span>\u8d27\u4ef6\u53f7</span><span>\u72b6\u6001</span><span>\u91d1\u989d</span><span>\u8d1f\u8d23\u4eba</span><span>\u66f4\u65b0\u65f6\u95f4</span></div>' +

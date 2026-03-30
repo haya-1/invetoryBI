@@ -21,16 +21,59 @@
     });
   }
 
+  function renderEChartsHBar(target, items, opts) {
+    if (!target || !items || !items.length) return;
+    var o = opts || {};
+    var sorted = items.slice().sort(function (a, b) { return a.value - b.value; });
+    var labels = sorted.map(function (i) { return i.tier || i.label || i.name; });
+    var values = sorted.map(function (i) { return i.value; });
+    var colors = sorted.map(function (i) { return i.color || o.color || "#5DADE2"; });
+    var unit = o.unit || "%";
+    var rowH = o.rowHeight || 30;
+    var h = Math.max(220, labels.length * rowH + 40);
+    target.innerHTML = '<div class="echart-box" style="min-height:' + h + 'px"></div>';
+    var chart = echarts.init(target.querySelector(".echart-box"));
+    chart.setOption({
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: function (params) {
+          var p = params[0];
+          return p.name + ": " + p.value + unit;
+        },
+      },
+      grid: { left: o.labelWidth || 80, right: 60, top: 6, bottom: 6, containLabel: false },
+      xAxis: { type: "value", max: o.max || 100, show: false },
+      yAxis: {
+        type: "category",
+        data: labels,
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: { fontSize: 12, color: "#333" },
+      },
+      series: [{
+        type: "bar",
+        data: values.map(function (v, i) { return { value: v, itemStyle: { color: colors[i] } }; }),
+        barWidth: o.barWidth || 18,
+        showBackground: true,
+        backgroundStyle: { color: "rgba(180,180,180,0.12)", borderRadius: 2 },
+        itemStyle: { borderRadius: 2 },
+        label: {
+          show: true,
+          position: "right",
+          fontSize: 12,
+          fontWeight: 600,
+          color: "#333",
+          formatter: function (p) { return p.value + unit; },
+        },
+      }],
+    });
+    window.addEventListener("resize", function () { chart.resize(); });
+    return chart;
+  }
+
   function renderAbcBars(target, items) {
-    if (!target) return;
-    var sorted = items.slice().sort(function (a, b) { return b.value - a.value; });
-    target.innerHTML = '<div class="abc-bar-list">' + sorted.map(function (item) {
-      return '<div class="abc-bar-row"><span class="abc-bar-label">' + (item.tier || item.label) +
-        '</span><div class="abc-bar-track"><span class="abc-bar-fill" style="width:' + item.value +
-        '%"></span><span class="abc-bar-value' + (item.value < 11 ? " is-outside" : "") +
-        '" style="left:' + item.value + '%">' + (Number.isInteger(item.value) ? item.value : item.value.toFixed(1)) +
-        '%</span></div></div>';
-    }).join("") + "</div>";
+    renderEChartsHBar(target, items, { color: "#5DADE2", unit: "%", max: 100, labelWidth: 60, barWidth: 20 });
   }
 
   function renderEChartsPie(target, items, title) {
